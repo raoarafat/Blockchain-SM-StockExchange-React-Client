@@ -4,8 +4,8 @@ const compiledFactory = require('./build/CampaignFactory.json');
 
 // Set up provider with your mnemonic and Infura URL
 provider = new HDWalletProvider(
-  'battle promote scan joy lift spike remove identify erupt pet junior birth',
-  'https://sepolia.infura.io/v3/09e89fac4db649a397524b4d6f80434a'
+  process.env.mnemonic, // Replace with your mnemonic
+  process.env.infura_url // Replace with your Infura URL
 );
 
 const web3 = new Web3(provider); // This should now work correctly with version 4.x

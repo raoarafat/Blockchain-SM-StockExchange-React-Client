@@ -1,55 +1,128 @@
 // pages/index.js or pages/index.tsx (or whichever file you are using for the page)
 import React, { Component } from 'react';
 import factory from '../ethereum/factory';
-import { Button, Card } from 'semantic-ui-react';
+import { Button, Container, Icon, Menu, Dropdown } from 'semantic-ui-react';
 import Layout from '../components/layout';
 import { Link } from '../routes';
 import 'semantic-ui-css/semantic.min.css';
+import companiesData from '../data/companies.json';
+import CompaniesTable from '../components/CompaniesTable';
+import CompanyModal from '../components/CompanyModal';
+import BuyStockModal from '../components/BuyStockModal';
+import SellStockModal from '../components/SellStockModal';
+import { formatCurrency, formatNumber } from '../utils/formatters';
+import ProtectedRoute from '../components/ProtectedRoute';
+import { useAuth } from '../context/AuthContext';
 
-class CampaignIndex extends Component {
-  static async getInitialProps() {
-    const campaigns = await factory.methods.getDeployedCampaigns().call();
-    return { campaigns };
-  }
+// Note: The findDOMNode warning comes from Semantic UI React library
+// This is a known issue with older versions of the library
+// It doesn't affect functionality but could be addressed by updating the library in the future
 
-  renderCampaigns() {
-    const items = this.props.campaigns.map((campaign) => {
-      return {
-        header: campaign.name,
-        description: (
-          <Link route={`/campaigns/detail/${campaign.campaignAddress}`}>
-            View Campaign
-          </Link>
-        ),
-        fluid: true,
-      };
-    });
+const CampaignIndex = () => {
+  const [state, setState] = React.useState({
+    viewModalOpen: false,
+    buyModalOpen: false,
+    sellModalOpen: false,
+    selectedCompany: null,
+  });
 
-    return <Card.Group items={items} />;
-  }
+  const { user, logout } = useAuth();
 
-  render() {
-    return (
+  const handleViewModalOpen = (company) => {
+    setState({ ...state, viewModalOpen: true, selectedCompany: company });
+  };
+
+  const handleViewModalClose = () => {
+    setState({ ...state, viewModalOpen: false });
+  };
+
+  const handleBuyModalOpen = (company) => {
+    setState({ ...state, buyModalOpen: true, selectedCompany: company });
+  };
+
+  const handleBuyModalClose = () => {
+    setState({ ...state, buyModalOpen: false });
+  };
+
+  const handleSellModalOpen = (company) => {
+    setState({ ...state, sellModalOpen: true, selectedCompany: company });
+  };
+
+  const handleSellModalClose = () => {
+    setState({ ...state, sellModalOpen: false });
+  };
+
+  const { viewModalOpen, buyModalOpen, sellModalOpen, selectedCompany } = state;
+
+  return (
+    <ProtectedRoute>
       <Layout>
-        <div>
-          {/* <link
-            rel="stylesheet"
-            href="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.12/semantic.min.css"
-          ></link> */}
-          <h3>Open Campaigns</h3>
-          {this.renderCampaigns()}
-          <Link route="/campaigns/new">
-            <Button
-              floated="right"
-              content="Create Campaign"
-              icon="add circle"
-              primary
-            />
-          </Link>
-        </div>
-      </Layout>
-    );
-  }
-}
+        <Menu attached="top" inverted color="teal">
+          <Container>
+            <Menu.Item header>
+              <Icon name="chart line" />
+              Stock Exchange
+            </Menu.Item>
 
-export default CampaignIndex; // Ensure the component is exported as default
+            <Menu.Menu position="right">
+              <Dropdown item text={`Welcome, ${user?.name}`}>
+                <Dropdown.Menu>
+                  <Dropdown.Item>
+                    <Icon name="money" />
+                    Balance: {formatCurrency(user?.fund)}
+                  </Dropdown.Item>
+                  <Dropdown.Item onClick={logout}>
+                    <Icon name="sign out" />
+                    Logout
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown>
+            </Menu.Menu>
+          </Container>
+        </Menu>
+
+        <Container style={{ marginTop: '2em' }}>
+          <CompaniesTable
+            companies={companiesData}
+            onViewCompany={handleViewModalOpen}
+            onBuyCompany={handleBuyModalOpen}
+            onSellCompany={handleSellModalOpen}
+          />
+
+          <CompanyModal
+            isOpen={viewModalOpen}
+            onClose={handleViewModalClose}
+            company={selectedCompany}
+            formatCurrency={formatCurrency}
+            formatNumber={formatNumber}
+          />
+
+          <BuyStockModal
+            isOpen={buyModalOpen}
+            onClose={handleBuyModalClose}
+            company={selectedCompany}
+          />
+
+          <SellStockModal
+            isOpen={sellModalOpen}
+            onClose={handleSellModalClose}
+            company={selectedCompany}
+          />
+
+          <Link route="/campaigns/new" legacyBehavior>
+            <a>
+              <Button
+                floated="right"
+                content="Create Campaign"
+                icon="add circle"
+                primary
+              />
+            </a>
+          </Link>
+        </Container>
+      </Layout>
+    </ProtectedRoute>
+  );
+};
+
+export default CampaignIndex;
