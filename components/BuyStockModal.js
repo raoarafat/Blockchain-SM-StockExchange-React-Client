@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   Button,
@@ -12,15 +12,31 @@ import {
   Message,
 } from 'semantic-ui-react';
 import { formatCurrency, formatNumber } from '../utils/formatters';
+import { usePortfolio } from '../context/PortfolioContext';
+import { useAuth } from '../context/AuthContext';
 
 const BuyStockModal = ({ isOpen, onClose, company }) => {
   const [quantity, setQuantity] = useState(1);
+  const [price, setPrice] = useState(0);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [result, setResult] = useState(null);
 
-  if (!company) return null;
+  const { buyStock, getStockPosition } = usePortfolio();
+  const { user } = useAuth();
 
-  const totalCost = quantity * company.buyPrice;
+  // Update price when company changes - this hook must be called unconditionally
+  useEffect(() => {
+    if (company) {
+      setPrice(company.buyPrice);
+    }
+  }, [company]);
+
+  if (!company || !user) return null;
+
+  const totalCost = quantity * price;
+  const canAfford = user.fund >= totalCost;
+  const currentPosition = getStockPosition(company.symbol);
 
   const handleQuantityChange = (e, { value }) => {
     // Ensure quantity is a positive number
@@ -28,21 +44,42 @@ const BuyStockModal = ({ isOpen, onClose, company }) => {
     setQuantity(newQuantity);
   };
 
+  const handlePriceChange = (e, { value }) => {
+    // Ensure price is a positive number
+    const newPrice = Math.max(0.01, parseFloat(value) || 0.01);
+    setPrice(newPrice);
+  };
+
   const handleBuyClick = () => {
+    if (!canAfford) {
+      setResult({
+        success: false,
+        message: `Insufficient funds. You need ${formatCurrency(
+          totalCost - user.fund
+        )} more.`,
+      });
+      return;
+    }
     setShowConfirmation(true);
   };
 
   const handleConfirmBuy = () => {
     setIsProcessing(true);
 
-    // Simulate API call
+    // Process the purchase
     setTimeout(() => {
+      const result = buyStock(company, quantity, price);
+      setResult(result);
       setIsProcessing(false);
       setShowConfirmation(false);
-      onClose();
-      // Here you would typically update your state or call a callback
-      // to inform the parent component that the purchase was successful
-    }, 1500);
+
+      if (result.success) {
+        // Close the modal after a short delay on success
+        setTimeout(() => {
+          resetAndClose();
+        }, 2000);
+      }
+    }, 1000);
   };
 
   const handleCancel = () => {
@@ -51,8 +88,12 @@ const BuyStockModal = ({ isOpen, onClose, company }) => {
 
   const resetAndClose = () => {
     setQuantity(1);
+    if (company) {
+      setPrice(company.buyPrice);
+    }
     setShowConfirmation(false);
     setIsProcessing(false);
+    setResult(null);
     onClose();
   };
 
@@ -64,7 +105,15 @@ const BuyStockModal = ({ isOpen, onClose, company }) => {
       </Modal.Header>
 
       <Modal.Content>
-        {!showConfirmation ? (
+        {result ? (
+          <Message
+            positive={result.success}
+            negative={!result.success}
+            icon={result.success ? 'check circle' : 'exclamation triangle'}
+            header={result.success ? 'Purchase Successful' : 'Purchase Failed'}
+            content={result.message}
+          />
+        ) : !showConfirmation ? (
           <Segment>
             <Header as="h3">Stock Information</Header>
             <Statistic.Group size="small" widths="three">
@@ -72,7 +121,7 @@ const BuyStockModal = ({ isOpen, onClose, company }) => {
                 <Statistic.Value>
                   {formatCurrency(company.buyPrice)}
                 </Statistic.Value>
-                <Statistic.Label>Current Price</Statistic.Label>
+                <Statistic.Label>Market Price</Statistic.Label>
               </Statistic>
               <Statistic>
                 <Statistic.Value>
@@ -91,21 +140,48 @@ const BuyStockModal = ({ isOpen, onClose, company }) => {
               </Statistic>
             </Statistic.Group>
 
+            {currentPosition && (
+              <>
+                <Divider />
+                <Header as="h4">Your Current Position</Header>
+                <p>
+                  You currently own {currentPosition.quantity} shares at an
+                  average price of{' '}
+                  {formatCurrency(currentPosition.averagePrice)}
+                </p>
+              </>
+            )}
+
             <Divider />
 
             <Form>
-              <Form.Field>
-                <label>Quantity</label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={quantity}
-                  onChange={handleQuantityChange}
-                  fluid
-                  label={{ basic: true, content: 'shares' }}
-                  labelPosition="right"
-                />
-              </Form.Field>
+              <Form.Group widths="equal">
+                <Form.Field>
+                  <label>Quantity</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={quantity}
+                    onChange={handleQuantityChange}
+                    fluid
+                    label={{ basic: true, content: 'shares' }}
+                    labelPosition="right"
+                  />
+                </Form.Field>
+                <Form.Field>
+                  <label>Price per Share</label>
+                  <Input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={price}
+                    onChange={handlePriceChange}
+                    fluid
+                    label={{ basic: true, content: '$' }}
+                    labelPosition="left"
+                  />
+                </Form.Field>
+              </Form.Group>
 
               <Segment>
                 <Header as="h4">Order Summary</Header>
@@ -117,7 +193,7 @@ const BuyStockModal = ({ isOpen, onClose, company }) => {
                   }}
                 >
                   <div>Price per share:</div>
-                  <div>{formatCurrency(company.buyPrice)}</div>
+                  <div>{formatCurrency(price)}</div>
                 </div>
                 <div
                   style={{
@@ -141,6 +217,28 @@ const BuyStockModal = ({ isOpen, onClose, company }) => {
                   <div>Total Cost:</div>
                   <div>{formatCurrency(totalCost)}</div>
                 </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    margin: '10px 0',
+                  }}
+                >
+                  <div>Your Balance:</div>
+                  <div>{formatCurrency(user.fund)}</div>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    margin: '10px 0',
+                  }}
+                >
+                  <div>Remaining Balance:</div>
+                  <div style={{ color: canAfford ? 'green' : 'red' }}>
+                    {formatCurrency(user.fund - totalCost)}
+                  </div>
+                </div>
               </Segment>
             </Form>
           </Segment>
@@ -150,9 +248,13 @@ const BuyStockModal = ({ isOpen, onClose, company }) => {
               <Message.Header>Confirm Your Purchase</Message.Header>
               <p>
                 You are about to purchase {quantity} shares of {company.symbol}{' '}
-                at {formatCurrency(company.buyPrice)} per share.
+                at {formatCurrency(price)} per share.
               </p>
               <p>Total cost: {formatCurrency(totalCost)}</p>
+              <p>
+                Your balance after this purchase will be{' '}
+                {formatCurrency(user.fund - totalCost)}
+              </p>
               <p>Do you want to proceed with this transaction?</p>
             </Message>
           </Segment>
@@ -160,12 +262,20 @@ const BuyStockModal = ({ isOpen, onClose, company }) => {
       </Modal.Content>
 
       <Modal.Actions>
-        {!showConfirmation ? (
+        {result ? (
+          <Button color="grey" onClick={resetAndClose}>
+            Close
+          </Button>
+        ) : !showConfirmation ? (
           <>
             <Button color="grey" onClick={resetAndClose}>
               Cancel
             </Button>
-            <Button color="green" onClick={handleBuyClick}>
+            <Button
+              color="green"
+              onClick={handleBuyClick}
+              disabled={!canAfford}
+            >
               <Icon name="shopping cart" /> Buy Shares
             </Button>
           </>

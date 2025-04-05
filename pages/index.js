@@ -1,5 +1,5 @@
 // pages/index.js or pages/index.tsx (or whichever file you are using for the page)
-import React, { Component } from 'react';
+import React, { useState } from 'react';
 import factory from '../ethereum/factory';
 import { Button, Container, Icon, Menu, Dropdown } from 'semantic-ui-react';
 import Layout from '../components/layout';
@@ -19,7 +19,7 @@ import { useAuth } from '../context/AuthContext';
 // It doesn't affect functionality but could be addressed by updating the library in the future
 
 const CampaignIndex = () => {
-  const [state, setState] = React.useState({
+  const [state, setState] = useState({
     viewModalOpen: false,
     buyModalOpen: false,
     sellModalOpen: false,
@@ -64,6 +64,16 @@ const CampaignIndex = () => {
               Stock Exchange
             </Menu.Item>
 
+            <Menu.Item active as={Link} route="/">
+              <Icon name="exchange" />
+              Market
+            </Menu.Item>
+
+            <Menu.Item as={Link} route="/portfolio">
+              <Icon name="briefcase" />
+              Portfolio
+            </Menu.Item>
+
             <Menu.Menu position="right">
               <Dropdown item text={`Welcome, ${user?.name}`}>
                 <Dropdown.Menu>
@@ -82,6 +92,11 @@ const CampaignIndex = () => {
         </Menu>
 
         <Container style={{ marginTop: '2em' }}>
+          <h2>
+            <Icon name="chart line" />
+            Stock Market
+          </h2>
+
           <CompaniesTable
             companies={companiesData}
             onViewCompany={handleViewModalOpen}
@@ -108,17 +123,6 @@ const CampaignIndex = () => {
             onClose={handleSellModalClose}
             company={selectedCompany}
           />
-
-          <Link route="/campaigns/new" legacyBehavior>
-            <a>
-              <Button
-                floated="right"
-                content="Create Campaign"
-                icon="add circle"
-                primary
-              />
-            </a>
-          </Link>
         </Container>
       </Layout>
     </ProtectedRoute>
