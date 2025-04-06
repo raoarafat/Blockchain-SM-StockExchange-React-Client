@@ -51,7 +51,7 @@ Ensure you have the following installed:
    node ethereum/deploy.js
    ```
 
-   Note the deployed `CampaignFactory` contract address for use in the application.
+   Note the deployed `StockExchangeFactory` contract address for use in the application.
 
 5. **Start Development Server**:
 
@@ -72,7 +72,7 @@ crowdfunding/
 │   ├── Campaign.sol      # Solidity contract for campaigns
 │   ├── compile.js        # Script to compile contracts
 │   ├── deploy.js         # Script to deploy contracts
-│   ├── factory.js        # Interacts with CampaignFactory contract
+│   ├── factory.js        # Interacts with StockExchangeFactory contract
 │   ├── campaign.js       # Interacts with individual Campaign contracts
 │   └── web3.js           # Configures web3 instance
 ├── components/
@@ -102,7 +102,7 @@ crowdfunding/
 
 ### `ethereum/deploy.js`
 
-- Script to deploy `CampaignFactory` to the Ethereum network.
+- Script to deploy `StockExchangeFactory` to the Ethereum network.
 
 ### `pages/index.js`
 
@@ -123,7 +123,7 @@ To deploy the application on a production network:
    Update `ethereum/deploy.js` with the production network provider (e.g., Infura) and deploy the contracts.
 
 2. **Update Contract Address**:
-   Update the deployed `CampaignFactory` address in `ethereum/factory.js`.
+   Update the deployed `StockExchangeFactory` address in `ethereum/factory.js`.
 
 3. **Build the Application**:
 
@@ -140,7 +140,7 @@ To deploy the application on a production network:
 
 ## Smart Contract Functions
 
-### CampaignFactory
+### StockExchangeFactory
 
 - `createCampaign(uint minimum)`: Creates a new campaign.
 - `getDeployedCampaigns()`: Returns a list of deployed campaigns.

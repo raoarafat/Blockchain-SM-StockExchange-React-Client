@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import Layout from '../../components/layout';
-import Campaign from '../../ethereum/campaign';
+import StockExchange from '../../ethereum/stockexchange';
 import web3 from '../../ethereum/web3';
 import ContributeForm from '../../components/ContributeForm';
 import { Grid, Card, Button } from 'semantic-ui-react';
@@ -10,7 +10,7 @@ class CampaignShow extends Component {
   static async getInitialProps(props) {
     console.log(props.query.address);
 
-    const campaign = await Campaign(props.query.address);
+    const campaign = await StockExchange(props.query.address);
     console.log('campaign: ', campaign);
     const summary = await campaign.methods.getSummary().call();
 

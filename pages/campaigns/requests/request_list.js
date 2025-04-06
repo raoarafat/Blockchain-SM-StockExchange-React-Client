@@ -1,14 +1,14 @@
 import React, { Component } from 'react';
 import Layout from '../../../components/layout';
 import Link from 'next/link';
-import Campaign from '../../../ethereum/campaign';
+import StockExchange from '../../../ethereum/stockexchange';
 import { Button, Table } from 'semantic-ui-react';
 import RequestRow from '../../../components/RequestRow';
 
 class RequestLists extends Component {
   static async getInitialProps(props) {
     const address = props.query.address;
-    const campaign = Campaign(address);
+    const campaign = StockExchange(address);
     const requestCount = Number(
       await campaign.methods.getRequestsCount().call()
     );

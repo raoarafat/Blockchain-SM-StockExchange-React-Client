@@ -2,28 +2,28 @@
 
 pragma solidity ^0.8.0; // Update to 0.8.x version
 
-contract CampaignFactory {
-    struct CampaignInfo {
+contract StockExchangeFactory {
+    struct StockExchangeInfo {
         address campaignAddress;
         string name;
     }
 
-    CampaignInfo[] public deployedCampaigns;
+    StockExchangeInfo[] public deployedCampaigns;
 
     function createCampaign(string memory name, uint minimum) public {
-        address newCampaign = address(new Campaign(name, minimum, msg.sender));
-        deployedCampaigns.push(CampaignInfo(newCampaign, name));
+        address newCampaign = address(new StockExchange(name, minimum, msg.sender));
+        deployedCampaigns.push(StockExchangeInfo(newCampaign, name));
     }
 
     function getDeployedCampaigns()
         public
         view
-        returns (CampaignInfo[] memory)
+        returns (StockExchangeInfo[] memory)
     {
         return deployedCampaigns;
     }
 }
-contract Campaign {
+contract StockExchange {
     struct Request {
         string description;
         uint value;

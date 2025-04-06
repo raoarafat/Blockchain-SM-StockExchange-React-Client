@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import web3 from '../../../ethereum/web3';
 import { Link, Router } from '../../../routes';
 import Layout from '../../../components/layout';
-import Campaign from '../../../ethereum/campaign';
+import StockExchange from '../../../ethereum/stockexchange';
 import { Button, Form, Input, Message } from 'semantic-ui-react';
 
 class RequestNew extends Component {
@@ -26,7 +26,7 @@ class RequestNew extends Component {
 
     this.setState({ loading: true, errorMessage: '' });
 
-    const campaign = Campaign(this.props.address);
+    const campaign = StockExchange(this.props.address);
     const { description, value, recipient } = this.state;
 
     try {

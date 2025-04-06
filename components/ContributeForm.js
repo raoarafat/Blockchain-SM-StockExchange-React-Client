@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { Button, Form, Input, Message } from 'semantic-ui-react';
 import web3 from '../ethereum/web3';
 import { Router } from '../routes';
-import Campaign from '../ethereum/campaign';
+import StockExchange from '../ethereum/stockexchange';
 
 class ContributeForm extends Component {
   state = {
@@ -16,7 +16,7 @@ class ContributeForm extends Component {
 
     this.setState({ loading: true, errorMessage: '' });
 
-    const campaign = Campaign(this.props.address);
+    const campaign = StockExchange(this.props.address);
 
     try {
       // Create a new campaign

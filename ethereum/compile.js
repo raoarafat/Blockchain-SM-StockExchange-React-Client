@@ -8,7 +8,7 @@ const buildPath = path.resolve(__dirname, 'build');
 fs.removeSync(buildPath);
 
 // Path to contract
-const campaignPath = path.resolve(__dirname, 'contracts', 'Campaign.sol');
+const campaignPath = path.resolve(__dirname, 'contracts', 'StockExchange.sol');
 // Read contract
 const source = fs.readFileSync(campaignPath, 'utf8');
 
@@ -16,7 +16,7 @@ const source = fs.readFileSync(campaignPath, 'utf8');
 const input = {
   language: 'Solidity',
   sources: {
-    'Campaign.sol': {
+    'StockExchange.sol': {
       content: source,
     },
   },
@@ -39,12 +39,12 @@ console.log(JSON.stringify(output, null, 2));
 fs.ensureDirSync(buildPath);
 
 // Check if output contains the compiled contracts
-if (output.contracts && output.contracts['Campaign.sol']) {
+if (output.contracts && output.contracts['StockExchange.sol']) {
   // Write output to build folder
-  for (let contract in output.contracts['Campaign.sol']) {
+  for (let contract in output.contracts['StockExchange.sol']) {
     fs.outputJsonSync(
       path.resolve(buildPath, contract.replace(':', '') + '.json'),
-      output.contracts['Campaign.sol'][contract]
+      output.contracts['StockExchange.sol'][contract]
     );
   }
   console.log('Contracts compiled and written to build folder');

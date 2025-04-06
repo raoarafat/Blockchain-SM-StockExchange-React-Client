@@ -1,9 +1,11 @@
+require('dotenv').config();
+
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 const { Web3 } = require('web3'); // Use destructuring to access the Web3 class
-const compiledFactory = require('./build/CampaignFactory.json');
+const compiledFactory = require('./build/StockExchangeFactory.json');
 
-// Set up provider with your mnemonic and Infura URL
-provider = new HDWalletProvider(
+// Add 'const' keyword here
+const provider = new HDWalletProvider(
   process.env.mnemonic, // Replace with your mnemonic
   process.env.infura_url // Replace with your Infura URL
 );

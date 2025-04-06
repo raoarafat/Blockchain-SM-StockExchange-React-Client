@@ -13,6 +13,7 @@
   "dependencies": {
     "@ganache/core": "^0.10.2",
     "@truffle/hdwallet-provider": "^2.0.16",
+    "dotenv": "^16.4.7",
     "fs-extra": "^11.2.0",
     "ganache": "^6.4.5",
     "mocha": "^10.8.2",

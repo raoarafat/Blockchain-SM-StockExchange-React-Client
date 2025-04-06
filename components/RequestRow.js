@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Table, Button } from 'semantic-ui-react';
 import web3 from '../ethereum/web3';
-import Campaign from '../ethereum/campaign';
+import StockExchange from '../ethereum/stockexchange';
 import { Router } from '../routes';
 
 class RequestRow extends Component {
@@ -14,7 +14,7 @@ class RequestRow extends Component {
     this.setState({ loadingApproved: true });
 
     try {
-      const campaign = Campaign(this.props.address);
+      const campaign = StockExchange(this.props.address);
       const accounts = await web3.eth.getAccounts();
       await campaign.methods.approveRequest(this.props.id).send({
         from: accounts[0],
@@ -35,7 +35,7 @@ class RequestRow extends Component {
     this.setState({ loadingFinalize: true });
 
     try {
-      const campaign = Campaign(this.props.address);
+      const campaign = StockExchange(this.props.address);
       const accounts = await web3.eth.getAccounts();
 
       const balance = await web3.eth.getBalance(this.props.address);
