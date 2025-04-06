@@ -56,75 +56,73 @@ const CampaignIndex = () => {
 
   return (
     <ProtectedRoute>
-      <Layout>
-        <Menu attached="top" inverted color="teal">
-          <Container>
-            <Menu.Item header>
-              <Icon name="chart line" />
-              Stock Exchange
-            </Menu.Item>
-
-            <Menu.Item active as={Link} route="/">
-              <Icon name="exchange" />
-              Market
-            </Menu.Item>
-
-            <Menu.Item as={Link} route="/portfolio">
-              <Icon name="briefcase" />
-              Portfolio
-            </Menu.Item>
-
-            <Menu.Menu position="right">
-              <Dropdown item text={`Welcome, ${user?.name}`}>
-                <Dropdown.Menu>
-                  <Dropdown.Item>
-                    <Icon name="money" />
-                    Balance: {formatCurrency(user?.fund)}
-                  </Dropdown.Item>
-                  <Dropdown.Item onClick={logout}>
-                    <Icon name="sign out" />
-                    Logout
-                  </Dropdown.Item>
-                </Dropdown.Menu>
-              </Dropdown>
-            </Menu.Menu>
-          </Container>
-        </Menu>
-
-        <Container style={{ marginTop: '2em' }}>
-          <h2>
+      <Menu attached="top" inverted color="teal">
+        <Container>
+          <Menu.Item header>
             <Icon name="chart line" />
-            Stock Market
-          </h2>
+            Stock Exchange
+          </Menu.Item>
 
-          <CompaniesTable
-            companies={companiesData}
-            onViewCompany={handleViewModalOpen}
-            onBuyCompany={handleBuyModalOpen}
-            onSellCompany={handleSellModalOpen}
-          />
+          <Menu.Item active as={Link} route="/">
+            <Icon name="exchange" />
+            Market
+          </Menu.Item>
 
-          <CompanyModal
-            isOpen={viewModalOpen}
-            onClose={handleViewModalClose}
-            company={selectedCompany}
-            formatCurrency={formatCurrency}
-            formatNumber={formatNumber}
-          />
+          <Menu.Item as={Link} route="/portfolio">
+            <Icon name="briefcase" />
+            Portfolio
+          </Menu.Item>
 
-          <BuyStockModal
-            isOpen={buyModalOpen}
-            onClose={handleBuyModalClose}
-            company={selectedCompany}
-          />
-
-          <SellStockModal
-            isOpen={sellModalOpen}
-            onClose={handleSellModalClose}
-            company={selectedCompany}
-          />
+          <Menu.Menu position="right">
+            <Dropdown item text={`Welcome, ${user?.name}`}>
+              <Dropdown.Menu>
+                <Dropdown.Item>
+                  <Icon name="money" />
+                  Balance: {formatCurrency(user?.fund)}
+                </Dropdown.Item>
+                <Dropdown.Item onClick={logout}>
+                  <Icon name="sign out" />
+                  Logout
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
+          </Menu.Menu>
         </Container>
-      </Layout>
+      </Menu>
+
+      <Container style={{ marginTop: '2em' }}>
+        <h2>
+          <Icon name="chart line" />
+          Stock Market
+        </h2>
+
+        <CompaniesTable
+          companies={companiesData}
+          onViewCompany={handleViewModalOpen}
+          onBuyCompany={handleBuyModalOpen}
+          onSellCompany={handleSellModalOpen}
+        />
+
+        <CompanyModal
+          isOpen={viewModalOpen}
+          onClose={handleViewModalClose}
+          company={selectedCompany}
+          formatCurrency={formatCurrency}
+          formatNumber={formatNumber}
+        />
+
+        <BuyStockModal
+          isOpen={buyModalOpen}
+          onClose={handleBuyModalClose}
+          company={selectedCompany}
+        />
+
+        <SellStockModal
+          isOpen={sellModalOpen}
+          onClose={handleSellModalClose}
+          company={selectedCompany}
+        />
+      </Container>
     </ProtectedRoute>
   );
 };

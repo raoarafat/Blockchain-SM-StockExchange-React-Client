@@ -47,7 +47,7 @@ class RequestNew extends Component {
 
   render() {
     return (
-      <Layout>
+      <>
         <Link route={`/campaigns/${this.props.address}/requests`}>Back</Link>
 
         <h3>Requests</h3>
@@ -82,7 +82,7 @@ class RequestNew extends Component {
             Create!
           </Button>
         </Form>
-      </Layout>
+      </>
     );
   }
 }

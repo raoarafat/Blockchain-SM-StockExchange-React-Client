@@ -49,7 +49,7 @@ class RequestLists extends Component {
     const { Header, Row, HeaderCell, Body } = Table;
 
     return (
-      <Layout>
+      <>
         <h3>Requests</h3>
         {this.props && this.props.address && (
           <Link href={`/campaigns/${this.props.address}/requests/new`}>
@@ -73,7 +73,7 @@ class RequestLists extends Component {
           <Body>{this.renderRows()}</Body>
         </Table>
         <div>Found {this.props.requestCount} requests.</div>
-      </Layout>
+      </>
     );
   }
 }
