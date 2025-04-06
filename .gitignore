@@ -15,10 +15,8 @@ artifacts/
 cache/
 
 # Environment variables
-.env
 
 # IDEs and editors
-.vscode/
 .idea/
 *.sublime-workspace
 *.sublime-project
@@ -31,3 +29,7 @@ cache/
 
 # Coverage
 coverage/
+config.bat
+temp_auto_push.bat
+temp_interactive_push.bat
+.gitignore

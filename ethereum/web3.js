@@ -4,11 +4,19 @@ const HDWalletProvider = require('@truffle/hdwallet-provider');
 
 let web3;
 
-const provider = new HDWalletProvider(
-  process.env.mnemonic, // Replace with your mnemonic
-  process.env.infura_url // Replace with your Infura URL
-);
-web3 = new Web3(provider);
-// }
+if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
+  // We are in the browser and metamask is running
+  web3 = new Web3(window.ethereum);
+} else {
+  // We are on the server *OR* the user is not running metamask
+  const provider = new HDWalletProvider({
+    mnemonic: {
+      phrase: process.env.mnemonic,
+    },
+    providerOrUrl: process.env.infura_url,
+  });
+
+  web3 = new Web3(provider);
+}
 
 export default web3;
