@@ -3,126 +3,170 @@
 pragma solidity ^0.8.0; // Update to 0.8.x version
 
 contract StockExchangeFactory {
-    struct StockExchangeInfo {
-        address campaignAddress;
-        string name;
+    address[] public deployedExchanges;
+    
+    function createExchange() public {
+        address newExchange = address(new StockExchange(msg.sender));
+        deployedExchanges.push(newExchange);
     }
-
-    StockExchangeInfo[] public deployedCampaigns;
-
-    function createCampaign(string memory name, uint minimum) public {
-        address newCampaign = address(new StockExchange(name, minimum, msg.sender));
-        deployedCampaigns.push(StockExchangeInfo(newCampaign, name));
-    }
-
-    function getDeployedCampaigns()
-        public
-        view
-        returns (StockExchangeInfo[] memory)
-    {
-        return deployedCampaigns;
+    
+    function getDeployedExchanges() public view returns (address[] memory) {
+        return deployedExchanges;
     }
 }
+
 contract StockExchange {
-    struct Request {
-        string description;
-        uint value;
-        address recipient;
-        bool complete;
-        uint approvalCount;
-        mapping(address => bool) approvals;
+    struct Stock {
+        string symbol;
+        uint256 price;
+        uint256 quantity;
     }
-
-    Request[] public requests;
+    
+    struct Transaction {
+        string symbol;
+        uint256 price;
+        uint256 quantity;
+        uint256 timestamp;
+        address trader;
+        bool isBuy;
+    }
+    
     address public manager;
-    uint public minimumContribution;
-    string public campaignName;
-    mapping(address => bool) public approvers;
-    uint public approversCount;
-
-    modifier restricted() {
-        require(msg.sender == manager, "Only the manager can call this.");
+    mapping(string => Stock) public stocks;
+    mapping(address => mapping(string => uint256)) public portfolios;
+    Transaction[] public transactions;
+    
+    event StockPurchased(address indexed buyer, string symbol, uint256 quantity, uint256 price);
+    event StockSold(address indexed seller, string symbol, uint256 quantity, uint256 price);
+    
+    constructor(address creator) {
+        manager = creator;
+    }
+    
+    modifier onlyManager() {
+        require(msg.sender == manager, "Only manager can perform this action");
         _;
     }
-
-    // Use the constructor keyword for newer Solidity versions
-    constructor(string memory name, uint minimum, address creator) {
-        manager = creator;
-        campaignName = name;
-        minimumContribution = minimum;
+    
+    function addStock(string memory symbol, uint256 price, uint256 quantity) public onlyManager {
+        require(stocks[symbol].quantity == 0, "Stock already exists");
+        stocks[symbol] = Stock(symbol, price, quantity);
     }
-
-    function contribute() public payable {
-        require(
-            msg.value > minimumContribution,
-            "Contribution is less than minimum required."
-        );
-
-        // If not already an approver, add the sender to approvers
-        if (!approvers[msg.sender]) {
-            approvers[msg.sender] = true;
-            approversCount++;
+    
+    function updateStockPrice(string memory symbol, uint256 newPrice) public onlyManager {
+        require(stocks[symbol].quantity > 0, "Stock does not exist");
+        stocks[symbol].price = newPrice;
+    }
+    
+    function buyStock(string memory symbol, uint256 quantity) public payable {
+        Stock storage stock = stocks[symbol];
+        require(stock.quantity > 0, "Stock does not exist");
+        require(quantity <= stock.quantity, "Not enough stocks available");
+        require(msg.value >= stock.price * quantity, "Insufficient payment");
+        
+        stock.quantity -= quantity;
+        portfolios[msg.sender][symbol] += quantity;
+        
+        // Record transaction
+        transactions.push(Transaction({
+            symbol: symbol,
+            price: stock.price,
+            quantity: quantity,
+            timestamp: block.timestamp,
+            trader: msg.sender,
+            isBuy: true
+        }));
+        
+        emit StockPurchased(msg.sender, symbol, quantity, stock.price);
+    }
+    
+    function sellStock(string memory symbol, uint256 quantity) public {
+        Stock storage stock = stocks[symbol];
+        require(stock.quantity > 0, "Stock does not exist");
+        require(portfolios[msg.sender][symbol] >= quantity, "Not enough stocks in portfolio");
+        
+        uint256 payment = stock.price * quantity;
+        
+        portfolios[msg.sender][symbol] -= quantity;
+        stock.quantity += quantity;
+        
+        // Record transaction
+        transactions.push(Transaction({
+            symbol: symbol,
+            price: stock.price,
+            quantity: quantity,
+            timestamp: block.timestamp,
+            trader: msg.sender,
+            isBuy: false
+        }));
+        
+        payable(msg.sender).transfer(payment);
+        emit StockSold(msg.sender, symbol, quantity, stock.price);
+    }
+    
+    // View functions for transaction history
+    function getTransactionCount() public view returns (uint256) {
+        return transactions.length;
+    }
+    
+    function getBuyTransactions() public view returns (Transaction[] memory) {
+        uint256 buyCount = 0;
+        for (uint i = 0; i < transactions.length; i++) {
+            if (transactions[i].isBuy) buyCount++;
         }
+        
+        Transaction[] memory buyTxs = new Transaction[](buyCount);
+        uint256 currentIndex = 0;
+        
+        for (uint i = 0; i < transactions.length; i++) {
+            if (transactions[i].isBuy) {
+                buyTxs[currentIndex] = transactions[i];
+                currentIndex++;
+            }
+        }
+        
+        return buyTxs;
     }
-
-    function createRequest(
-        string memory description,
-        uint value,
-        address recipient
-    ) public restricted {
-        Request storage newRequest = requests.push();
-        newRequest.description = description;
-        newRequest.value = value;
-        newRequest.recipient = recipient;
-        newRequest.complete = false;
-        newRequest.approvalCount = 0;
+    
+    function getSellTransactions() public view returns (Transaction[] memory) {
+        uint256 sellCount = 0;
+        for (uint i = 0; i < transactions.length; i++) {
+            if (!transactions[i].isBuy) sellCount++;
+        }
+        
+        Transaction[] memory sellTxs = new Transaction[](sellCount);
+        uint256 currentIndex = 0;
+        
+        for (uint i = 0; i < transactions.length; i++) {
+            if (!transactions[i].isBuy) {
+                sellTxs[currentIndex] = transactions[i];
+                currentIndex++;
+            }
+        }
+        
+        return sellTxs;
     }
-
-    function approveRequest(uint index) public {
-        Request storage request = requests[index];
-
-        require(approvers[msg.sender], "Only contributors can approve.");
-        require(
-            !request.approvals[msg.sender],
-            "You have already approved this request."
-        );
-
-        request.approvals[msg.sender] = true;
-        request.approvalCount++;
+    
+    function getUserTransactions(address user) public view returns (Transaction[] memory) {
+        uint256 userTxCount = 0;
+        for (uint i = 0; i < transactions.length; i++) {
+            if (transactions[i].trader == user) userTxCount++;
+        }
+        
+        Transaction[] memory userTxs = new Transaction[](userTxCount);
+        uint256 currentIndex = 0;
+        
+        for (uint i = 0; i < transactions.length; i++) {
+            if (transactions[i].trader == user) {
+                userTxs[currentIndex] = transactions[i];
+                currentIndex++;
+            }
+        }
+        
+        return userTxs;
     }
-
-    function finalizeRequest(uint index) public restricted {
-        Request storage request = requests[index];
-
-        require(
-            request.approvalCount > (approversCount / 2),
-            "Not enough approvals."
-        );
-        require(!request.complete, "Request is already complete.");
-
-        // Using call instead of transfer to send Ether
-        (bool success, ) = request.recipient.call{value: request.value}("");
-        require(success, "Transfer failed.");
-
-        request.complete = true;
-    }
-
-    function getSummary()
-        public
-        view
-        returns (string memory, uint, uint, uint, uint, address)
-    {
-        return (
-            campaignName,
-            minimumContribution,
-            address(this).balance,
-            requests.length,
-            approversCount,
-            manager
-        );
-    }
-
-    function getRequestsCount() public view returns (uint) {
-        return requests.length;
+    
+    function getPortfolioBalance(address user, string memory symbol) public view returns (uint256) {
+        return portfolios[user][symbol];
     }
 }
