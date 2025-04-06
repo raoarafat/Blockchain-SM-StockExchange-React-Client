@@ -9,7 +9,7 @@ const abi =
 
 const instance = new web3.eth.Contract(
   abi,
-  '0x39F0aa60b0cc89B404bc7e90DAb8AcE97Ee76020'
+  '0xc9fDd40f73F4f74ff95756F08F50f81c55764084'
 );
 
 //process.env.deployed_contract_address // Replace with the deployed contract address

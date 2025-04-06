@@ -11,10 +11,17 @@ if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
   // We are on the server *OR* the user is not running metamask
   const provider = new HDWalletProvider({
     mnemonic: {
-      phrase: process.env.mnemonic,
+      phrase:
+        'battle promote scan joy lift spike remove identify erupt pet junior birth',
     },
-    providerOrUrl: process.env.infura_url,
+    providerOrUrl:
+      'https://sepolia.infura.io/v3/09e89fac4db649a397524b4d6f80434a', // process.env.infura_url,
   });
+
+  // const provider = new HDWalletProvider(
+  //   'battle promote scan joy lift spike remove identify erupt pet junior birth',
+  //   'https://sepolia.infura.io/v3/09e89fac4db649a397524b4d6f80434a'
+  // );
 
   web3 = new Web3(provider);
 }

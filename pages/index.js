@@ -1,16 +1,7 @@
 // pages/index.js or pages/index.tsx (or whichever file you are using for the page)
-import React, { useState, useEffect } from 'react';
-import factory from '../ethereum/factory';
-import {
-  Button,
-  Container,
-  Icon,
-  Menu,
-  Dropdown,
-  Message,
-} from 'semantic-ui-react';
+import React, { useState } from 'react';
+import { Container, Icon, Menu, Dropdown, Message } from 'semantic-ui-react';
 import Layout from '../components/layout';
-import { Link } from '../routes';
 import 'semantic-ui-css/semantic.min.css';
 import companiesData from '../data/companies.json';
 import CompaniesTable from '../components/CompaniesTable';
@@ -20,12 +11,6 @@ import SellStockModal from '../components/SellStockModal';
 import { formatCurrency, formatNumber } from '../utils/formatters';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { useAuth } from '../context/AuthContext';
-import { blockchainService } from '../services/blockchainService';
-import { initializeStocks } from '../utils/initializeStocks';
-
-// Note: The findDOMNode warning comes from Semantic UI React library
-// This is a known issue with older versions of the library
-// It doesn't affect functionality but could be addressed by updating the library in the future
 
 const CampaignIndex = () => {
   const [state, setState] = useState({
@@ -36,8 +21,8 @@ const CampaignIndex = () => {
   });
 
   const { user, logout } = useAuth();
-  const [exchangeAddress, setExchangeAddress] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Use your deployed StockExchange contract address here
+  const exchangeAddress = '0x39F0aa60b0cc89B404bc7e90DAb8AcE97Ee76020';
   const [error, setError] = useState(null);
 
   const handleViewModalOpen = (company) => {
@@ -66,90 +51,35 @@ const CampaignIndex = () => {
 
   const { viewModalOpen, buyModalOpen, sellModalOpen, selectedCompany } = state;
 
-  // Fetch the deployed exchange address when the component mounts
-  useEffect(() => {
-    const fetchExchangeAddress = async () => {
-      try {
-        setIsLoading(true);
-        const result = await blockchainService.getDeployedExchanges();
-
-        if (result.success && result.exchanges.length > 0) {
-          setExchangeAddress(result.exchanges[0]); // Use the first exchange
-        } else {
-          // If no exchange exists, create one
-          const createResult = await blockchainService.createExchange();
-          if (createResult.success) {
-            // Fetch the newly created exchange
-            const newResult = await blockchainService.getDeployedExchanges();
-            if (newResult.success && newResult.exchanges.length > 0) {
-              setExchangeAddress(newResult.exchanges[0]);
-            }
-          }
-        }
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchExchangeAddress();
-  }, []);
-
-  useEffect(() => {
-    const setupExchange = async () => {
-      if (!exchangeAddress) return;
-
-      try {
-        // Check if any stocks exist in the exchange
-        const testStock = companiesData[0];
-        const stockResult = await blockchainService.getStockInfo(
-          exchangeAddress,
-          testStock.symbol
-        );
-
-        // If the stock doesn't exist, initialize all stocks
-        if (!stockResult.success || stockResult.stock.quantity === '0') {
-          await initializeStocks(exchangeAddress);
-        }
-      } catch (error) {
-        console.error('Error setting up exchange:', error);
-      }
-    };
-
-    setupExchange();
-  }, [exchangeAddress]);
-
   return (
     <ProtectedRoute>
-      <Menu attached="top" inverted color="teal">
+      <Menu fixed="top" inverted>
         <Container>
-          <Menu.Item header>
+          <Menu.Item as="a" header>
             <Icon name="chart line" />
-            Stock Exchange
+            Stock Trading App
           </Menu.Item>
-
-          <Menu.Item active as={Link} route="/">
-            <Icon name="exchange" />
+          <Menu.Item as="a" href="/">
             Market
           </Menu.Item>
-
-          <Menu.Item as={Link} route="/portfolio">
-            <Icon name="briefcase" />
+          <Menu.Item as="a" href="/portfolio">
             Portfolio
           </Menu.Item>
 
           <Menu.Menu position="right">
-            <Dropdown item text={`Welcome, ${user?.name}`}>
+            {user && (
+              <Menu.Item>
+                <Icon name="user" />
+                {user.name} | {formatCurrency(user.fund)}
+              </Menu.Item>
+            )}
+            <Dropdown item text="Account">
               <Dropdown.Menu>
-                <Dropdown.Item>
-                  <Icon name="money" />
-                  Balance: {formatCurrency(user?.fund)}
-                </Dropdown.Item>
-                <Dropdown.Item onClick={logout}>
-                  <Icon name="sign out" />
-                  Logout
-                </Dropdown.Item>
+                {user ? (
+                  <Dropdown.Item onClick={logout}>Logout</Dropdown.Item>
+                ) : (
+                  <Dropdown.Item href="/login">Login</Dropdown.Item>
+                )}
               </Dropdown.Menu>
             </Dropdown>
           </Menu.Menu>
@@ -162,11 +92,9 @@ const CampaignIndex = () => {
           Stock Market
         </h2>
 
-        {isLoading ? (
-          <div>Loading exchange data...</div>
-        ) : error ? (
+        {error ? (
           <Message negative>
-            <Message.Header>Error loading exchange</Message.Header>
+            <Message.Header>Error</Message.Header>
             <p>{error}</p>
           </Message>
         ) : (

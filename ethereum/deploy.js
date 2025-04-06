@@ -6,8 +6,8 @@ const compiledFactory = require('./build/StockExchangeFactory.json');
 
 // Add 'const' keyword here
 const provider = new HDWalletProvider(
-  process.env.mnemonic, // Replace with your mnemonic
-  process.env.infura_url // Replace with your Infura URL
+  'battle promote scan joy lift spike remove identify erupt pet junior birth',
+  'https://sepolia.infura.io/v3/09e89fac4db649a397524b4d6f80434a'
 );
 
 const web3 = new Web3(provider); // This should now work correctly with version 4.x
