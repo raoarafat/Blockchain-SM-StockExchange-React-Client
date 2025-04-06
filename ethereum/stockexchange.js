@@ -20,7 +20,8 @@ export const getExchangeInstance = (address) => {
 };
 
 // Create factory instance with the deployed factory address
-const FACTORY_ADDRESS = process.env.deployed_contract_address; // Use the environment variable
+const FACTORY_ADDRESS = '0x39F0aa60b0cc89B404bc7e90DAb8AcE97Ee76020'; //process.env.deployed_contract_address; // Use the environment variable
+console.log('FACTORY_ADDRESS: ', FACTORY_ADDRESS);
 export const factory = new web3.eth.Contract(factoryAbi, FACTORY_ADDRESS);
 
 export default getExchangeInstance;

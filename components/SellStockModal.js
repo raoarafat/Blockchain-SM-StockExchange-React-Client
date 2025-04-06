@@ -77,10 +77,11 @@ const SellStockModal = ({ isOpen, onClose, company, exchangeAddress }) => {
     setBlockchainError(null);
 
     try {
-      // First, try to execute the blockchain transaction
-      const blockchainResult = await blockchainService.sellStock(
+      // First, try to execute the blockchain transaction to record the sale
+      const blockchainResult = await blockchainService.recordSellTransaction(
         exchangeAddress,
         company.symbol,
+        price,
         quantity
       );
 
