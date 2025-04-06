@@ -14,18 +14,20 @@ import {
 import { formatCurrency, formatNumber } from '../utils/formatters';
 import { usePortfolio } from '../context/PortfolioContext';
 import { useAuth } from '../context/AuthContext';
+import { blockchainService } from '../services/blockchainService';
 
-const SellStockModal = ({ isOpen, onClose, company }) => {
+const SellStockModal = ({ isOpen, onClose, company, exchangeAddress }) => {
   const [quantity, setQuantity] = useState(1);
   const [price, setPrice] = useState(0);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState(null);
+  const [blockchainError, setBlockchainError] = useState(null);
 
   const { sellStock, getStockPosition } = usePortfolio();
   const { user } = useAuth();
 
-  // Update price when company changes - this hook must be called unconditionally
+  // Update price when company changes
   useEffect(() => {
     if (company) {
       setPrice(company.sellPrice);
@@ -70,15 +72,27 @@ const SellStockModal = ({ isOpen, onClose, company }) => {
     setShowConfirmation(true);
   };
 
-  const handleConfirmSell = () => {
+  const handleConfirmSell = async () => {
     setIsProcessing(true);
+    setBlockchainError(null);
 
-    // Process the sale
-    setTimeout(() => {
+    try {
+      // First, try to execute the blockchain transaction
+      const blockchainResult = await blockchainService.sellStock(
+        exchangeAddress,
+        company.symbol,
+        quantity
+      );
+
+      if (!blockchainResult.success) {
+        setBlockchainError(blockchainResult.error);
+        setIsProcessing(false);
+        return;
+      }
+
+      // If blockchain transaction succeeds, update the UI state
       const result = sellStock(company, quantity, price);
       setResult(result);
-      setIsProcessing(false);
-      setShowConfirmation(false);
 
       if (result.success) {
         // Close the modal after a short delay on success
@@ -86,7 +100,12 @@ const SellStockModal = ({ isOpen, onClose, company }) => {
           resetAndClose();
         }, 2000);
       }
-    }, 1000);
+    } catch (error) {
+      setBlockchainError(error.message);
+    } finally {
+      setIsProcessing(false);
+      setShowConfirmation(false);
+    }
   };
 
   const handleCancel = () => {
@@ -101,6 +120,7 @@ const SellStockModal = ({ isOpen, onClose, company }) => {
     setShowConfirmation(false);
     setIsProcessing(false);
     setResult(null);
+    setBlockchainError(null);
     onClose();
   };
 
@@ -111,6 +131,13 @@ const SellStockModal = ({ isOpen, onClose, company }) => {
       </Modal.Header>
 
       <Modal.Content>
+        {blockchainError && (
+          <Message negative>
+            <Message.Header>Blockchain Transaction Failed</Message.Header>
+            <p>{blockchainError}</p>
+          </Message>
+        )}
+
         {result ? (
           <Message
             positive={result.success}
