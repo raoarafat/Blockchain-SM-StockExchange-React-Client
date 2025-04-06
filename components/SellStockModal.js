@@ -77,12 +77,37 @@ const SellStockModal = ({ isOpen, onClose, company, exchangeAddress }) => {
     setBlockchainError(null);
 
     try {
+      // Debug: Log the price value and type
+      console.log('Price before conversion:', price, typeof price);
+
+      // Get the price from the company object if it's not available in the state
+      let numericPrice;
+      if (price && !isNaN(parseFloat(price))) {
+        numericPrice = parseFloat(price);
+      } else if (company && company.sellPrice) {
+        numericPrice = parseFloat(company.sellPrice);
+      } else {
+        setBlockchainError('Invalid price value. Could not determine price.');
+        setIsProcessing(false);
+        return;
+      }
+
+      console.log('Price after conversion:', numericPrice, typeof numericPrice);
+
+      // Make sure quantity is also a number
+      const numericQuantity = parseInt(quantity, 10);
+      if (isNaN(numericQuantity) || numericQuantity <= 0) {
+        setBlockchainError('Invalid quantity value');
+        setIsProcessing(false);
+        return;
+      }
+
       // First, try to execute the blockchain transaction to record the sale
       const blockchainResult = await blockchainService.recordSellTransaction(
         exchangeAddress,
         company.symbol,
-        price,
-        quantity
+        numericPrice,
+        numericQuantity
       );
 
       if (!blockchainResult.success) {
@@ -92,7 +117,7 @@ const SellStockModal = ({ isOpen, onClose, company, exchangeAddress }) => {
       }
 
       // If blockchain transaction succeeds, update the UI state
-      const result = sellStock(company, quantity, price);
+      const result = sellStock(company, numericQuantity, numericPrice);
       setResult(result);
 
       if (result.success) {
@@ -102,6 +127,7 @@ const SellStockModal = ({ isOpen, onClose, company, exchangeAddress }) => {
         }, 2000);
       }
     } catch (error) {
+      console.error('Error in handleConfirmSell:', error);
       setBlockchainError(error.message);
     } finally {
       setIsProcessing(false);

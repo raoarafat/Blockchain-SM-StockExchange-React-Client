@@ -1,42 +1,34 @@
 require('dotenv').config();
 
 const HDWalletProvider = require('@truffle/hdwallet-provider');
-const { Web3 } = require('web3'); // Use destructuring to access the Web3 class
-const compiledFactory = require('./build/StockExchangeFactory.json');
+const { Web3 } = require('web3');
+const compiledStockExchange = require('./build/StockExchange.json');
 
-// Add 'const' keyword here
+// Create provider with your mnemonic and Infura endpoint
 const provider = new HDWalletProvider(
-  'battle promote scan joy lift spike remove identify erupt pet junior birth',
-  'https://sepolia.infura.io/v3/09e89fac4db649a397524b4d6f80434a'
+  'battle promote scan joy lift spike remove identify erupt pet junior birth', // Your mnemonic
+  'https://sepolia.infura.io/v3/09e89fac4db649a397524b4d6f80434a' // Your Infura endpoint
 );
 
-const web3 = new Web3(provider); // This should now work correctly with version 4.x
+const web3 = new Web3(provider);
 
 const deploy = async () => {
   try {
+    // Get accounts
     const accounts = await web3.eth.getAccounts();
-    console.log('Attempting to deploy from account', accounts[0]);
+    console.log('Attempting to deploy from account:', accounts[0]);
 
-    const balance = await web3.eth.getBalance(accounts[0]);
-    console.log('Balance:', web3.utils.fromWei(balance, 'ether'), 'ETH');
-
-    console.log('Current gas price (in wei):', await web3.eth.getGasPrice());
-
-    // Ensure bytecode is correct
-    const bytecode = compiledFactory.evm.bytecode.object; // Or just compiledFactory.bytecode
-    console.log('Contract bytecode:', bytecode);
-
-    const result = await new web3.eth.Contract(compiledFactory.abi)
-      .deploy({
-        data: bytecode, // Use correct bytecode here
-      })
-      .send({
-        gas: '5000000', // Keep gas limit reasonable
-        gasPrice: web3.utils.toWei('2', 'gwei'), // Reduce gas price
-        from: accounts[0],
-      });
+    // Deploy the StockExchange contract
+    const result = await new web3.eth.Contract(compiledStockExchange.abi)
+      .deploy({ data: compiledStockExchange.evm.bytecode.object })
+      .send({ from: accounts[0], gas: '3000000' });
 
     console.log('Contract deployed to:', result.options.address);
+
+    // Save the deployed address to a file or environment variable
+    // You can use this address in your application
+    console.log('Add this address to your .env file or stockexchange.js:');
+    console.log(`EXCHANGE_ADDRESS=${result.options.address}`);
   } catch (error) {
     console.error('Deployment failed with error:', error);
   } finally {

@@ -22,7 +22,7 @@ const CampaignIndex = () => {
 
   const { user, logout } = useAuth();
   // Use your deployed StockExchange contract address here
-  const exchangeAddress = '0x39F0aa60b0cc89B404bc7e90DAb8AcE97Ee76020';
+  const exchangeAddress = '0xDc5B1E3393316E6C83C0d4676b7E66951E35ADD7';
   const [error, setError] = useState(null);
 
   const handleViewModalOpen = (company) => {

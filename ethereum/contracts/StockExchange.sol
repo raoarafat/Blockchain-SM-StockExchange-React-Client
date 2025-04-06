@@ -1,19 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0; // Update to 0.8.x version
-
-contract StockExchangeFactory {
-    address[] public deployedExchanges;
-    
-    function createExchange() public {
-        address newExchange = address(new StockExchange(msg.sender));
-        deployedExchanges.push(newExchange);
-    }
-    
-    function getDeployedExchanges() public view returns (address[] memory) {
-        return deployedExchanges;
-    }
-}
+pragma solidity ^0.8.0;
 
 contract StockExchange {
     struct Transaction {
@@ -25,19 +12,14 @@ contract StockExchange {
         bool isBuy;
     }
     
-    address public manager;
+    address public owner;
     Transaction[] public transactions;
     
     event StockPurchased(address indexed buyer, string symbol, uint256 quantity, uint256 price);
     event StockSold(address indexed seller, string symbol, uint256 quantity, uint256 price);
     
-    constructor(address creator) {
-        manager = creator;
-    }
-    
-    modifier onlyManager() {
-        require(msg.sender == manager, "Only manager can perform this action");
-        _;
+    constructor() {
+        owner = msg.sender;
     }
     
     // Record a buy transaction on the blockchain
@@ -90,5 +72,10 @@ contract StockExchange {
         }
         
         return userTxs;
+    }
+    
+    // Simple test function to verify connectivity
+    function testConnection() public pure returns (bool) {
+        return true;
     }
 }
