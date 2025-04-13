@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import Router from 'next/router';
 import investorsData from '../data/investors.json';
+import web3 from '../ethereum/web3';
 
 const AuthContext = createContext();
 
@@ -12,23 +13,40 @@ export const AuthProvider = ({ children }) => {
     // Check if there's a user in localStorage
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const userData = JSON.parse(storedUser);
+      // Add hardcoded MetaMask address to user data
+      setUser({
+        ...userData,
+        address: '0x40E2F8ff22D7D63Ca74DFf9D035F09F0e10fBFcC', // Replace with your MetaMask address
+      });
     }
     setLoading(false);
   }, []);
 
-  const login = (email, password) => {
+  const login = async (email, password) => {
     // Find the investor with matching credentials
     const investor = investorsData.find(
       (inv) => inv.email === email && inv.password === password
     );
 
     if (investor) {
-      // Create a user object without the password
-      const { password, ...userWithoutPassword } = investor;
-      setUser(userWithoutPassword);
-      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-      return true;
+      try {
+        // Add hardcoded MetaMask address
+        const userWithAddress = {
+          ...investor,
+          address: '0x40E2F8ff22D7D63Ca74DFf9D035F09F0e10fBFcC', // Replace with your MetaMask address
+        };
+
+        // Remove password from stored data
+        const { password: _, ...userWithoutPassword } = userWithAddress;
+
+        setUser(userWithoutPassword);
+        localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+        return true;
+      } catch (error) {
+        console.error('Error setting up user with address:', error);
+        return false;
+      }
     }
     return false;
   };

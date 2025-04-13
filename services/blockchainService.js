@@ -2,21 +2,98 @@ import web3 from '../ethereum/web3';
 // import { getExchangeInstance, factory } from '../ethereum/stockexchange';
 
 import exchange from '../ethereum/stockexchange';
+import StockExchange from '../ethereum/build/StockExchange.json';
 
-export const blockchainService = {
+class BlockchainService {
+  constructor() {
+    this.exchangeAddress = '0xDc5B1E3393316E6C83C0d4676b7E66951E35ADD7'; // Your deployed contract address
+    this.contract = new web3.eth.Contract(
+      StockExchange.abi,
+      this.exchangeAddress
+    );
+  }
+
+  async getUserTransactions(userAddress) {
+    try {
+      // Use provided address or fallback to hardcoded address
+      console.log('userAddress: ', userAddress);
+      const address =
+        userAddress || '0x40E2F8ff22D7D63Ca74DFf9D035F09F0e10fBFcC';
+      const transactions = await this.contract.methods
+        .getUserTransactions(address)
+        .call();
+
+      return transactions.map((tx) => ({
+        id: `${tx.timestamp}-${tx.symbol}`,
+        symbol: tx.symbol,
+        type: tx.isBuy ? 'buy' : 'sell',
+        quantity: Number(tx.quantity),
+        price: Number(web3.utils.fromWei(tx.price, 'ether')),
+        total:
+          Number(tx.quantity) * Number(web3.utils.fromWei(tx.price, 'ether')),
+        date: new Date(Number(tx.timestamp) * 1000).toISOString(),
+        trader: tx.trader,
+      }));
+    } catch (error) {
+      console.error('Error fetching user transactions:', error);
+      return [];
+    }
+  }
+
+  async getPortfolioPositions(userAddress) {
+    try {
+      // Use provided address or fallback to hardcoded address
+      const address =
+        userAddress || '0x40E2F8ff22D7D63Ca74DFf9D035F09F0e10fBFcC';
+      const transactions = await this.getUserTransactions(address);
+
+      // Calculate positions from transactions
+      const positions = new Map();
+
+      transactions.forEach((tx) => {
+        const currentPosition = positions.get(tx.symbol) || {
+          symbol: tx.symbol,
+          quantity: 0,
+          totalCost: 0,
+        };
+
+        if (tx.type === 'buy') {
+          currentPosition.quantity += tx.quantity;
+          currentPosition.totalCost += tx.quantity * tx.price;
+        } else {
+          currentPosition.quantity -= tx.quantity;
+          currentPosition.totalCost -= tx.quantity * tx.price;
+        }
+
+        if (currentPosition.quantity > 0) {
+          currentPosition.averagePrice =
+            currentPosition.totalCost / currentPosition.quantity;
+          positions.set(tx.symbol, currentPosition);
+        } else {
+          positions.delete(tx.symbol);
+        }
+      });
+
+      return Array.from(positions.values());
+    } catch (error) {
+      console.error('Error calculating portfolio positions:', error);
+      return [];
+    }
+  }
+
   // Test connection to the contract
   async testConnection() {
     try {
       // Simple call to check if the contract exists and is accessible
       const accounts = await web3.eth.getAccounts();
       console.log('Connected account:', accounts[0]);
-      console.log('Contract address:', exchange.options.address);
+      console.log('Contract address:', this.contract.options.address);
       return { success: true };
     } catch (error) {
       console.error('Connection test failed:', error);
       return { success: false, error: error.message };
     }
-  },
+  }
 
   // Record a buy transaction
   async recordBuyTransaction(exchangeAddress, symbol, price, quantity) {
@@ -96,7 +173,7 @@ export const blockchainService = {
 
       return { success: false, error: errorMessage };
     }
-  },
+  }
 
   // Record a sell transaction
   async recordSellTransaction(exchangeAddress, symbol, price, quantity) {
@@ -178,61 +255,7 @@ export const blockchainService = {
 
       return { success: false, error: errorMessage };
     }
-  },
+  }
+}
 
-  // Get user's transaction history
-  async getUserTransactions(exchangeAddress) {
-    try {
-      console.log('Getting transactions, exchange address:', exchangeAddress);
-
-      const accounts = await web3.eth.getAccounts();
-      if (!accounts || accounts.length === 0) {
-        return {
-          success: false,
-          error: 'No accounts available',
-          transactions: [],
-        };
-      }
-
-      // For now, return mock data to bypass blockchain issues
-      const mockTransactions = [
-        {
-          symbol: 'AAPL',
-          price: '150.25',
-          quantity: '10',
-          timestamp: new Date().toISOString(),
-          isBuy: true,
-        },
-        {
-          symbol: 'GOOGL',
-          price: '2500.75',
-          quantity: '2',
-          timestamp: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-          isBuy: false,
-        },
-      ];
-
-      console.log('Returning mock transactions for development');
-      return { success: true, transactions: mockTransactions };
-
-      /*
-      // Uncomment this when ready to test actual blockchain interaction
-      const transactions = await exchange.methods.getUserTransactions(accounts[0]).call();
-      
-      // Format the transactions for UI
-      const formattedTransactions = transactions.map(tx => ({
-        symbol: tx.symbol,
-        price: web3.utils.fromWei(tx.price, 'ether'),
-        quantity: tx.quantity,
-        timestamp: new Date(parseInt(tx.timestamp) * 1000).toISOString(),
-        isBuy: tx.isBuy
-      }));
-      
-      return { success: true, transactions: formattedTransactions };
-      */
-    } catch (error) {
-      console.error('Error getting user transactions:', error);
-      return { success: false, error: error.message, transactions: [] };
-    }
-  },
-};
+export const blockchainService = new BlockchainService();

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Table,
@@ -11,41 +11,98 @@ import {
   Menu,
   Dropdown,
 } from 'semantic-ui-react';
-import Layout from '../components/layout';
 import ProtectedRoute from '../components/ProtectedRoute';
-import { usePortfolio } from '../context/PortfolioContext';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../utils/formatters';
 import { Link } from '../routes';
+import { blockchainService } from '../services/blockchainService';
 import companiesData from '../data/companies.json';
 
 const Portfolio = () => {
-  const { portfolio, transactions } = usePortfolio();
-  const { user, logout } = useAuth();
+  const [portfolio, setPortfolio] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { user, logout, login } = useAuth();
 
-  if (!user) return null;
+  useEffect(() => {
+    const loadBlockchainData = async () => {
+      if (user?.address) {
+        try {
+          setLoading(true);
+          const [positions, txns] = await Promise.all([
+            blockchainService.getPortfolioPositions(user.address),
+            blockchainService.getUserTransactions(user.address),
+          ]);
+          console.log('positions: ', positions);
+          console.log('txns: ', txns);
+
+          setPortfolio(positions);
+          setTransactions(txns);
+        } catch (error) {
+          console.error('Error loading blockchain data:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadBlockchainData();
+  }, [user]);
+
+  if (!user) {
+    return (
+      <Container style={{ marginTop: '2em' }}>
+        <Message warning>
+          <Message.Header>Wallet Connection Required</Message.Header>
+          <p>Please connect your MetaMask wallet to view your portfolio.</p>
+          <Button primary onClick={login}>
+            <Icon name="plug" />
+            Connect Wallet
+          </Button>
+        </Message>
+      </Container>
+    );
+  }
+
+  if (!user.address) {
+    return (
+      <Container style={{ marginTop: '2em' }}>
+        <Message warning>
+          <Message.Header>MetaMask Connection Required</Message.Header>
+          <p>Please connect your MetaMask wallet to continue.</p>
+          <Button primary onClick={login}>
+            <Icon name="plug" />
+            Connect MetaMask
+          </Button>
+        </Message>
+      </Container>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Container style={{ marginTop: '2em' }}>
+        <Segment loading>
+          <Header as="h2">Loading portfolio data...</Header>
+        </Segment>
+      </Container>
+    );
+  }
 
   // Calculate total portfolio value
   const calculatePortfolioValue = () => {
     return portfolio.reduce((total, position) => {
-      const company = companiesData.find((c) => c.symbol === position.symbol);
-      if (company) {
-        return total + position.quantity * company.sellPrice;
-      }
-      return total;
+      return total + position.quantity * position.averagePrice;
     }, 0);
   };
 
   // Calculate total profit/loss
   const calculateTotalProfitLoss = () => {
     return portfolio.reduce((total, position) => {
-      const company = companiesData.find((c) => c.symbol === position.symbol);
-      if (company) {
-        const currentValue = position.quantity * company.sellPrice;
-        const costBasis = position.quantity * position.averagePrice;
-        return total + (currentValue - costBasis);
-      }
-      return total;
+      const latestPrice = position.averagePrice; // You might want to get current market price here
+      const currentValue = position.quantity * latestPrice;
+      const costBasis = position.quantity * position.averagePrice;
+      return total + (currentValue - costBasis);
     }, 0);
   };
 

@@ -1,24 +1,22 @@
 import { useEffect } from 'react';
+import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
-import Router from 'next/router';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    // If not loading and no user, redirect to login
     if (!loading && !user) {
-      Router.push('/login');
+      router.push('/login');
     }
-  }, [user, loading]);
+  }, [user, loading, router]);
 
-  // Show nothing while loading or redirecting
-  if (loading || !user) {
-    return null;
+  if (loading) {
+    return <div>Loading...</div>;
   }
 
-  // If we have a user, show the protected content
-  return children;
+  return user ? children : null;
 };
 
 export default ProtectedRoute;
