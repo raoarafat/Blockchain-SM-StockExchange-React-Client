@@ -20,29 +20,19 @@ class BlockchainService {
 
   async getUserTransactions(userAddress) {
     try {
-      if (!this.contract) {
-        throw new Error('Contract not initialized');
-      }
-
-      const txs = await this.contract.methods
+      const transactions = await this.contract.methods
         .getUserTransactions(userAddress)
         .call();
 
-      console.log('Raw transactions:', txs); // Debug log
+      console.log('Raw blockchain transactions:', transactions); // Debug log
 
-      // Transform the transaction data
-      const formattedTxs = txs.map((tx) => ({
-        id: `${tx.timestamp}-${tx.symbol}`,
+      return transactions.map((tx) => ({
         symbol: tx.symbol,
         price: tx.price,
-        quantity: parseInt(tx.quantity), // Ensure quantity is a number
+        quantity: tx.quantity,
         timestamp: tx.timestamp,
-        isBuy: tx.isBuy === true || tx.isBuy === 'true', // Ensure boolean
-        date: new Date(parseInt(tx.timestamp) * 1000).toISOString(),
+        isBuy: tx.isBuy,
       }));
-
-      console.log('Formatted transactions:', formattedTxs);
-      return formattedTxs;
     } catch (error) {
       console.error('Error fetching user transactions:', error);
       throw error;

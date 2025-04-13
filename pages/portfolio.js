@@ -45,6 +45,7 @@ const Portfolio = () => {
               pos.symbol,
           }));
 
+          // Enhanced transaction formatting
           const formattedTransactions = txns.map((tx) => ({
             id: `${tx.timestamp}-${tx.symbol}`,
             type: tx.isBuy ? 'buy' : 'sell',
@@ -53,12 +54,14 @@ const Portfolio = () => {
               companiesData.find((c) => c.symbol === tx.symbol)?.name ||
               tx.symbol,
             quantity: parseInt(tx.quantity),
-            price: parseFloat(web3.utils.fromWei(tx.price, 'ether')),
+            price: parseFloat(web3.utils.fromWei(tx.price.toString(), 'ether')),
             total:
-              parseFloat(web3.utils.fromWei(tx.price, 'ether')) *
+              parseFloat(web3.utils.fromWei(tx.price.toString(), 'ether')) *
               parseInt(tx.quantity),
-            date: tx.date,
+            date: new Date(parseInt(tx.timestamp) * 1000).toISOString(), // Convert blockchain timestamp to Date
           }));
+
+          console.log('Loaded transactions:', formattedTransactions); // Debug log
 
           setPortfolio(formattedPositions);
           setTransactions(formattedTransactions);
@@ -274,7 +277,7 @@ const Portfolio = () => {
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {transactions.slice(0, 10).map((transaction) => (
+              {transactions.map((transaction) => (
                 <Table.Row key={transaction.id}>
                   <Table.Cell>
                     {new Date(transaction.date).toLocaleString()}
