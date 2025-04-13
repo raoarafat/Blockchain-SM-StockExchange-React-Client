@@ -1,7 +1,7 @@
 // pages/index.js or pages/index.tsx (or whichever file you are using for the page)
 import React, { useState } from 'react';
 import { Container, Icon, Menu, Dropdown, Message } from 'semantic-ui-react';
-import Layout from '../components/layout';
+import Layout from '../components/Layout';
 import 'semantic-ui-css/semantic.min.css';
 import companiesData from '../data/companies.json';
 import CompaniesTable from '../components/CompaniesTable';
@@ -11,6 +11,8 @@ import SellStockModal from '../components/SellStockModal';
 import { formatCurrency, formatNumber } from '../utils/formatters';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { useAuth } from '../context/AuthContext';
+import Header from '../components/Header';
+import { pageStyles } from '../styles/global';
 
 const CampaignIndex = () => {
   const [state, setState] = useState({
@@ -53,40 +55,9 @@ const CampaignIndex = () => {
 
   return (
     <ProtectedRoute>
-      <Menu fixed="top" inverted>
-        <Container>
-          <Menu.Item as="a" header>
-            <Icon name="chart line" />
-            Stock Trading App
-          </Menu.Item>
-          <Menu.Item as="a" href="/">
-            Market
-          </Menu.Item>
-          <Menu.Item as="a" href="/portfolio">
-            Portfolio
-          </Menu.Item>
+      <Header activeItem="market" />
 
-          <Menu.Menu position="right">
-            {user && (
-              <Menu.Item>
-                <Icon name="user" />
-                {user.name} | {formatCurrency(user.fund)}
-              </Menu.Item>
-            )}
-            <Dropdown item text="Account">
-              <Dropdown.Menu>
-                {user ? (
-                  <Dropdown.Item onClick={logout}>Logout</Dropdown.Item>
-                ) : (
-                  <Dropdown.Item href="/login">Login</Dropdown.Item>
-                )}
-              </Dropdown.Menu>
-            </Dropdown>
-          </Menu.Menu>
-        </Container>
-      </Menu>
-
-      <Container style={{ marginTop: '2em' }}>
+      <Container style={pageStyles.container}>
         <h2>
           <Icon name="chart line" />
           Stock Market

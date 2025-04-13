@@ -1,160 +1,148 @@
-# Crowdfunding Platform
+# Blockchain-Based Stock Exchange Platform
 
-This application is a decentralized crowdfunding platform powered by Ethereum and Solidity. It enables users to create campaigns, contribute Ether securely, and manage spending requests through approval or finalization. The platform features a React-based web client for a seamless user experience.
-
----
+A decentralized stock exchange platform built with Next.js, React, and Ethereum smart contracts. This platform allows users to buy and sell stocks with transactions recorded on the blockchain.
 
 ## Features
 
-- **Campaign Management**: Create and manage crowdfunding campaigns.
-- **Contributions**: Contribute Ether to campaigns securely.
-- **Request Approval**: Campaign managers can create spending requests, which contributors can approve.
-- **Secure Transactions**: Funds are only transferred when the majority of contributors approve a request.
+- **User Authentication**: Secure login system with MetaMask wallet integration
+- **Real-time Market Data**: View live stock prices and market information
+- **Portfolio Management**: Track your investments and transaction history
+- **Blockchain Integration**: All transactions are recorded on the Ethereum blockchain
+- **Responsive Design**: Built with Semantic UI React for a modern, mobile-friendly interface
 
----
+## Technology Stack
+
+- **Frontend**:
+
+  - Next.js
+  - React
+  - Semantic UI React
+  - Web3.js
+
+- **Smart Contracts**:
+
+  - Solidity
+  - Ethereum
+  - Truffle/Hardhat
+
+- **Other Tools**:
+  - MetaMask
+  - Node.js
+  - Ethers.js
 
 ## Prerequisites
 
-Ensure you have the following installed:
-
-- **Node.js** (v16+ recommended)
-- **npm** or **yarn**
-- **Ganache**: Local Ethereum blockchain.
-- **MetaMask**: Browser extension for Ethereum wallets.
-
----
+- Node.js (v14 or higher)
+- MetaMask browser extension
+- Ethereum testnet (Sepolia) account with test ETH
 
 ## Installation
 
-1. **Clone the Repository**:
+1. Clone the repository:
 
-   ```bash
-   git clone <repository-url>
-   cd kickstart
-   ```
+```bash
+git clone https://github.com/yourusername/Blockchain-SM-StockExchange-React-Client.git
+cd Blockchain-SM-StockExchange-React-Client
+```
 
-2. **Install Dependencies**:
+2. Install dependencies:
 
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
-3. **Compile Smart Contracts**:
+3. Create a `.env` file in the root directory and add your configuration:
 
-   ```bash
-   node ethereum/compile.js
-   ```
+```env
+NEXT_PUBLIC_CONTRACT_ADDRESS=your_contract_address
+NEXT_PUBLIC_NETWORK_ID=11155111  # Sepolia testnet
+```
 
-4. **Deploy Contracts**:
+4. Run the development server:
+
+```bash
+npm run dev
+```
+
+## Project Structure
+
+```plaintext
+stock-exchange/
+├── ethereum/
+│   ├── contracts/
+│   │   └── StockExchange.sol    # Main smart contract
+│   ├── compile.js               # Script to compile contracts
+│   ├── deploy.js                # Script to deploy contracts
+│   ├── factory.js               # Contract instance configuration
+│   └── web3.js                  # Web3 configuration
+├── components/
+│   ├── Header.js                # Navigation header
+│   ├── BuyStockModal.js         # Stock purchase modal
+│   ├── SellStockModal.js        # Stock selling modal
+│   └── ProtectedRoute.js        # Auth route wrapper
+├── context/
+│   ├── AuthContext.js           # Authentication context
+│   └── PortfolioContext.js      # Portfolio management context
+├── pages/
+│   ├── index.js                 # Market view page
+│   ├── portfolio.js             # Portfolio page
+│   └── login.js                 # Login page
+├── services/
+│   └── blockchainService.js     # Blockchain interaction service
+├── utils/
+│   └── formatters.js            # Utility functions
+└── styles/
+    └── global.js                # Global styles
+```
+
+## Key Files and Directories
+
+### `ethereum/contracts/StockExchange.sol`
+
+- Smart contract for managing stock transactions
+- Contains functionality for buying/selling stocks and tracking transactions
+
+### `ethereum/deploy.js`
+
+- Script to deploy `StockExchange` contract to the Ethereum network
+
+### `pages/index.js`
+
+- Displays the market view with available stocks
+- Implements buy/sell functionality
+
+### `pages/portfolio.js`
+
+- Shows user's portfolio and transaction history
+- Displays investment statistics and performance
+
+## Smart Contract Functions
+
+### StockExchange Contract
+
+- `recordBuyTransaction(string symbol, uint256 price, uint256 quantity)`: Records a stock purchase
+- `recordSellTransaction(string symbol, uint256 price, uint256 quantity)`: Records a stock sale
+- `getUserTransactions(address user)`: Returns user's transaction history
+- `testConnection()`: Verifies contract connectivity
+
+## Deployment
+
+To deploy the application:
+
+1. **Deploy Contract**:
 
    ```bash
    node ethereum/deploy.js
    ```
 
-   Note the deployed `StockExchangeFactory` contract address for use in the application.
-
-5. **Start Development Server**:
-
-   ```bash
-   npm run dev
-   ```
-
-6. **Access the Application**:
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
-
----
-
-## Project Structure
-
-```plaintext
-crowdfunding/
-├── ethereum/
-│   ├── Campaign.sol      # Solidity contract for campaigns
-│   ├── compile.js        # Script to compile contracts
-│   ├── deploy.js         # Script to deploy contracts
-│   ├── factory.js        # Interacts with StockExchangeFactory contract
-│   ├── campaign.js       # Interacts with individual Campaign contracts
-│   └── web3.js           # Configures web3 instance
-├── components/
-│   ├── ContributeForm.js # Contribution form component
-│   ├── Header.js         # Header component
-│   ├── Layout.js         # Layout wrapper
-│   └── RequestRow.js     # Component for displaying spending requests
-├── pages/
-│   ├── index.js          # Main page displaying campaigns
-│   ├── campaigns/
-│   │   ├── new.js        # Create a new campaign
-│   │   └── [address].js  # Campaign details
-├── routes/
-│   ├── index.js          # Defines custom routes
-├── package.json          # Project dependencies and scripts
-└── README.md             # Documentation
-```
-
----
-
-## Key Files and Directories
-
-### `ethereum/Campaign.sol`
-
-- Smart contract for managing campaigns.
-- Contains functionality for contributions, request creation, approval, and finalization.
-
-### `ethereum/deploy.js`
-
-- Script to deploy `StockExchangeFactory` to the Ethereum network.
-
-### `pages/index.js`
-
-- Displays a list of active campaigns.
-- Users can view campaign details or create new campaigns.
-
-### `components/ContributeForm.js`
-
-- Form to contribute Ether to a specific campaign.
-
----
-
-## Deployment
-
-To deploy the application on a production network:
-
-1. **Deploy Contracts**:
-   Update `ethereum/deploy.js` with the production network provider (e.g., Infura) and deploy the contracts.
-
 2. **Update Contract Address**:
-   Update the deployed `StockExchangeFactory` address in `ethereum/factory.js`.
+   Update the deployed address in `.env` and `factory.js`
 
-3. **Build the Application**:
-
+3. **Build and Start**:
    ```bash
    npm run build
-   ```
-
-4. **Start the Server**:
-   ```bash
    npm start
    ```
-
----
-
-## Smart Contract Functions
-
-### StockExchangeFactory
-
-- `createCampaign(uint minimum)`: Creates a new campaign.
-- `getDeployedCampaigns()`: Returns a list of deployed campaigns.
-
-### Campaign
-
-- `contribute()`: Allows users to contribute Ether.
-- `createRequest(string description, uint value, address recipient)`: Creates a spending request.
-- `approveRequest(uint index)`: Approves a spending request.
-- `finalizeRequest(uint index)`: Finalizes a request if it has majority approval.
-- `getSummary()`: Returns a summary of the campaign details.
-- `getRequestsCount()`: Returns the number of spending requests.
-
----
 
 ## Testing
 
@@ -164,24 +152,30 @@ Run tests with:
 npm test
 ```
 
-Ensure Ganache is running before executing tests. Test files are located in the `test` directory and include comprehensive cases for the smart contracts.
+Tests cover smart contract functionality and React components.
 
----
+## Security Considerations
+
+- All transactions require MetaMask authentication
+- Smart contract includes security measures for transaction validation
+- Protected routes ensure authenticated access
+- Input validation for all transactions
 
 ## Contributing
 
-Feel free to fork the repository and submit pull requests. Ensure your changes are well-tested.
-
----
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## License
 
 This project is licensed under the MIT License.
 
----
-
 ## Notes
 
-- Ensure MetaMask is connected to the correct network.
-- Use the correct deployed contract address in `factory.js` for interacting with the blockchain.
-- For additional help, consult Ethereum and Solidity documentation.
+- Ensure MetaMask is connected to the Sepolia testnet
+- Keep your MetaMask wallet funded with test ETH
+- Check the console for transaction status and errors
+- All transactions are recorded on the blockchain and may take time to process

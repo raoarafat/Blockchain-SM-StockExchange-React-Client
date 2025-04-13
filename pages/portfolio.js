@@ -17,6 +17,8 @@ import { formatCurrency } from '../utils/formatters';
 import { Link } from '../routes';
 import { blockchainService } from '../services/blockchainService';
 import companiesData from '../data/companies.json';
+import Layout from '../components/Layout';
+import { pageStyles } from '../styles/global';
 
 const Portfolio = () => {
   const [portfolio, setPortfolio] = useState([]);
@@ -51,7 +53,7 @@ const Portfolio = () => {
 
   if (!user) {
     return (
-      <Container style={{ marginTop: '2em' }}>
+      <Container style={pageStyles.container}>
         <Message warning>
           <Message.Header>Wallet Connection Required</Message.Header>
           <p>Please connect your MetaMask wallet to view your portfolio.</p>
@@ -66,7 +68,7 @@ const Portfolio = () => {
 
   if (!user.address) {
     return (
-      <Container style={{ marginTop: '2em' }}>
+      <Container style={pageStyles.container}>
         <Message warning>
           <Message.Header>MetaMask Connection Required</Message.Header>
           <p>Please connect your MetaMask wallet to continue.</p>
@@ -81,7 +83,7 @@ const Portfolio = () => {
 
   if (loading) {
     return (
-      <Container style={{ marginTop: '2em' }}>
+      <Container style={pageStyles.container}>
         <Segment loading>
           <Header as="h2">Loading portfolio data...</Header>
         </Segment>
@@ -111,42 +113,8 @@ const Portfolio = () => {
   const totalAssets = user.fund + portfolioValue;
 
   return (
-    <ProtectedRoute>
-      <Menu attached="top" inverted color="teal">
-        <Container>
-          <Menu.Item header>
-            <Icon name="chart line" />
-            Stock Exchange
-          </Menu.Item>
-
-          <Menu.Item as={Link} route="/">
-            <Icon name="exchange" />
-            Market
-          </Menu.Item>
-
-          <Menu.Item active as={Link} route="/portfolio">
-            <Icon name="briefcase" />
-            Portfolio
-          </Menu.Item>
-
-          <Menu.Menu position="right">
-            <Dropdown item text={`Welcome, ${user?.name}`}>
-              <Dropdown.Menu>
-                <Dropdown.Item>
-                  <Icon name="money" />
-                  Balance: {formatCurrency(user?.fund)}
-                </Dropdown.Item>
-                <Dropdown.Item onClick={logout}>
-                  <Icon name="sign out" />
-                  Logout
-                </Dropdown.Item>
-              </Dropdown.Menu>
-            </Dropdown>
-          </Menu.Menu>
-        </Container>
-      </Menu>
-
-      <Container style={{ marginTop: '2em' }}>
+    <Layout activeItem="portfolio">
+      <Container style={pageStyles.container}>
         <Header as="h2">
           <Icon name="briefcase" />
           <Header.Content>
@@ -313,7 +281,7 @@ const Portfolio = () => {
           </Table>
         )}
       </Container>
-    </ProtectedRoute>
+    </Layout>
   );
 };
 
