@@ -15,7 +15,6 @@ artifacts/
 cache/
 
 # Environment variables
-.env
 
 # IDEs and editors
 .vscode/
@@ -31,3 +30,4 @@ cache/
 
 # Coverage
 coverage/
+config.bat
