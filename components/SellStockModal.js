@@ -23,9 +23,21 @@ const SellStockModal = ({ isOpen, onClose, company, exchangeAddress }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState(null);
   const [blockchainError, setBlockchainError] = useState(null);
+  const [position, setPosition] = useState(null);
 
-  const { sellStock, getStockPosition } = usePortfolio();
+  const { sellStock, getStockPosition, refreshPortfolioData } = usePortfolio();
   const { user } = useAuth();
+
+  // Load position data when modal opens or company changes
+  useEffect(() => {
+    const loadPosition = async () => {
+      if (company && user?.address) {
+        const pos = await getStockPosition(company.symbol);
+        setPosition(pos);
+      }
+    };
+    loadPosition();
+  }, [company, user]);
 
   // Update price when company changes
   useEffect(() => {
@@ -36,7 +48,6 @@ const SellStockModal = ({ isOpen, onClose, company, exchangeAddress }) => {
 
   if (!company || !user) return null;
 
-  const position = getStockPosition(company.symbol);
   const canSell = position && position.quantity >= quantity;
   const totalValue = quantity * price;
 
@@ -77,55 +88,65 @@ const SellStockModal = ({ isOpen, onClose, company, exchangeAddress }) => {
     setBlockchainError(null);
 
     try {
-      // Debug: Log the price value and type
-      console.log('Price before conversion:', price, typeof price);
-
-      // Get the price from the company object if it's not available in the state
-      let numericPrice;
-      if (price && !isNaN(parseFloat(price))) {
-        numericPrice = parseFloat(price);
-      } else if (company && company.sellPrice) {
-        numericPrice = parseFloat(company.sellPrice);
-      } else {
-        setBlockchainError('Invalid price value. Could not determine price.');
-        setIsProcessing(false);
-        return;
-      }
-
-      console.log('Price after conversion:', numericPrice, typeof numericPrice);
-
-      // Make sure quantity is also a number
+      const numericPrice = parseFloat(price);
       const numericQuantity = parseInt(quantity, 10);
-      if (isNaN(numericQuantity) || numericQuantity <= 0) {
-        setBlockchainError('Invalid quantity value');
-        setIsProcessing(false);
+
+      if (isNaN(numericPrice) || isNaN(numericQuantity)) {
+        throw new Error('Invalid price or quantity');
+      }
+
+      // Get fresh position data
+      const currentPosition = await getStockPosition(company.symbol);
+      console.log('Current position before sell:', currentPosition);
+
+      if (!currentPosition) {
+        setResult({
+          success: false,
+          message: `You don't own any shares of ${company.symbol}.`,
+        });
         return;
       }
 
-      // First, try to execute the blockchain transaction to record the sale
+      if (currentPosition.quantity < numericQuantity) {
+        setResult({
+          success: false,
+          message: `You only own ${currentPosition.quantity} shares of ${company.symbol}.`,
+        });
+        return;
+      }
+
+      // Record the transaction on blockchain
       const blockchainResult = await blockchainService.recordSellTransaction(
-        exchangeAddress,
         company.symbol,
         numericPrice,
         numericQuantity
       );
 
       if (!blockchainResult.success) {
-        setBlockchainError(blockchainResult.error);
-        setIsProcessing(false);
-        return;
+        throw new Error(
+          blockchainResult.error || 'Blockchain transaction failed'
+        );
       }
 
-      // If blockchain transaction succeeds, update the UI state
-      const result = sellStock(company, numericQuantity, numericPrice);
-      setResult(result);
+      // Wait for transaction to be mined and refresh data
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait for blockchain to update
+      await refreshPortfolioData(); // Add this function to your context
 
-      if (result.success) {
-        // Close the modal after a short delay on success
-        setTimeout(() => {
-          resetAndClose();
-        }, 2000);
-      }
+      // Get updated position
+      const updatedPosition = await getStockPosition(company.symbol);
+      console.log('Position after sell:', updatedPosition);
+
+      setResult({
+        success: true,
+        message: `Successfully sold ${numericQuantity} shares of ${company.symbol}`,
+      });
+
+      setTimeout(() => {
+        resetAndClose();
+        if (onClose) {
+          onClose(true);
+        }
+      }, 2000);
     } catch (error) {
       console.error('Error in handleConfirmSell:', error);
       setBlockchainError(error.message);
@@ -148,7 +169,9 @@ const SellStockModal = ({ isOpen, onClose, company, exchangeAddress }) => {
     setIsProcessing(false);
     setResult(null);
     setBlockchainError(null);
-    onClose();
+    if (onClose) {
+      onClose(false); // Pass false to indicate unsuccessful transaction
+    }
   };
 
   return (

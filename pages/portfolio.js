@@ -19,6 +19,7 @@ import { blockchainService } from '../services/blockchainService';
 import companiesData from '../data/companies.json';
 import Layout from '../components/Layout';
 import { pageStyles } from '../styles/global';
+import web3 from '../ethereum/web3';
 
 const Portfolio = () => {
   const [portfolio, setPortfolio] = useState([]);
@@ -35,11 +36,32 @@ const Portfolio = () => {
             blockchainService.getPortfolioPositions(user.address),
             blockchainService.getUserTransactions(user.address),
           ]);
-          console.log('positions: ', positions);
-          console.log('txns: ', txns);
 
-          setPortfolio(positions);
-          setTransactions(txns);
+          // Transform blockchain data to match UI requirements
+          const formattedPositions = positions.map((pos) => ({
+            ...pos,
+            name:
+              companiesData.find((c) => c.symbol === pos.symbol)?.name ||
+              pos.symbol,
+          }));
+
+          const formattedTransactions = txns.map((tx) => ({
+            id: `${tx.timestamp}-${tx.symbol}`,
+            type: tx.isBuy ? 'buy' : 'sell',
+            symbol: tx.symbol,
+            name:
+              companiesData.find((c) => c.symbol === tx.symbol)?.name ||
+              tx.symbol,
+            quantity: parseInt(tx.quantity),
+            price: parseFloat(web3.utils.fromWei(tx.price, 'ether')),
+            total:
+              parseFloat(web3.utils.fromWei(tx.price, 'ether')) *
+              parseInt(tx.quantity),
+            date: tx.date,
+          }));
+
+          setPortfolio(formattedPositions);
+          setTransactions(formattedTransactions);
         } catch (error) {
           console.error('Error loading blockchain data:', error);
         } finally {

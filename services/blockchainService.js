@@ -6,254 +6,187 @@ import StockExchange from '../ethereum/build/StockExchange.json';
 
 class BlockchainService {
   constructor() {
-    this.exchangeAddress = '0xDc5B1E3393316E6C83C0d4676b7E66951E35ADD7'; // Your deployed contract address
-    this.contract = new web3.eth.Contract(
-      StockExchange.abi,
-      this.exchangeAddress
-    );
+    this.exchangeAddress = '0xDc5B1E3393316E6C83C0d4676b7E66951E35ADD7';
+    try {
+      this.contract = new web3.eth.Contract(
+        StockExchange.abi,
+        this.exchangeAddress
+      );
+      this.web3 = web3;
+    } catch (error) {
+      console.error('Error initializing BlockchainService:', error);
+    }
   }
 
   async getUserTransactions(userAddress) {
     try {
-      // Use provided address or fallback to hardcoded address
-      console.log('userAddress: ', userAddress);
-      const address =
-        userAddress || '0x40E2F8ff22D7D63Ca74DFf9D035F09F0e10fBFcC';
-      const transactions = await this.contract.methods
-        .getUserTransactions(address)
+      if (!this.contract) {
+        throw new Error('Contract not initialized');
+      }
+
+      const txs = await this.contract.methods
+        .getUserTransactions(userAddress)
         .call();
 
-      return transactions.map((tx) => ({
+      console.log('Raw transactions:', txs); // Debug log
+
+      // Transform the transaction data
+      const formattedTxs = txs.map((tx) => ({
         id: `${tx.timestamp}-${tx.symbol}`,
         symbol: tx.symbol,
-        type: tx.isBuy ? 'buy' : 'sell',
-        quantity: Number(tx.quantity),
-        price: Number(web3.utils.fromWei(tx.price, 'ether')),
-        total:
-          Number(tx.quantity) * Number(web3.utils.fromWei(tx.price, 'ether')),
-        date: new Date(Number(tx.timestamp) * 1000).toISOString(),
-        trader: tx.trader,
+        price: tx.price,
+        quantity: parseInt(tx.quantity), // Ensure quantity is a number
+        timestamp: tx.timestamp,
+        isBuy: tx.isBuy === true || tx.isBuy === 'true', // Ensure boolean
+        date: new Date(parseInt(tx.timestamp) * 1000).toISOString(),
       }));
+
+      console.log('Formatted transactions:', formattedTxs);
+      return formattedTxs;
     } catch (error) {
       console.error('Error fetching user transactions:', error);
-      return [];
+      throw error;
     }
   }
 
   async getPortfolioPositions(userAddress) {
     try {
-      // Use provided address or fallback to hardcoded address
-      const address =
-        userAddress || '0x40E2F8ff22D7D63Ca74DFf9D035F09F0e10fBFcC';
-      const transactions = await this.getUserTransactions(address);
+      if (!userAddress) {
+        throw new Error('User address is required');
+      }
 
-      // Calculate positions from transactions
-      const positions = new Map();
+      const transactions = await this.getUserTransactions(userAddress);
+      console.log('Fetched transactions for address:', userAddress);
+      console.log('Processing transactions:', transactions);
+
+      const positions = {};
 
       transactions.forEach((tx) => {
-        const currentPosition = positions.get(tx.symbol) || {
-          symbol: tx.symbol,
-          quantity: 0,
-          totalCost: 0,
-        };
-
-        if (tx.type === 'buy') {
-          currentPosition.quantity += tx.quantity;
-          currentPosition.totalCost += tx.quantity * tx.price;
-        } else {
-          currentPosition.quantity -= tx.quantity;
-          currentPosition.totalCost -= tx.quantity * tx.price;
+        const symbol = tx.symbol;
+        if (!positions[symbol]) {
+          positions[symbol] = {
+            symbol,
+            quantity: 0,
+            totalCost: 0,
+            averagePrice: 0,
+          };
         }
 
-        if (currentPosition.quantity > 0) {
-          currentPosition.averagePrice =
-            currentPosition.totalCost / currentPosition.quantity;
-          positions.set(tx.symbol, currentPosition);
+        const price = parseFloat(this.web3.utils.fromWei(tx.price, 'ether'));
+        const quantity = parseInt(tx.quantity);
+
+        console.log(`Processing transaction for ${symbol}:`, {
+          isBuy: tx.isBuy,
+          quantity,
+          price,
+          currentQuantity: positions[symbol].quantity,
+        });
+
+        if (tx.isBuy) {
+          positions[symbol].quantity += quantity;
+          positions[symbol].totalCost += price * quantity;
         } else {
-          positions.delete(tx.symbol);
+          positions[symbol].quantity -= quantity;
+          positions[symbol].totalCost = Math.max(
+            0,
+            positions[symbol].totalCost - price * quantity
+          );
+        }
+
+        if (positions[symbol].quantity > 0) {
+          positions[symbol].averagePrice =
+            positions[symbol].totalCost / positions[symbol].quantity;
         }
       });
 
-      return Array.from(positions.values());
+      const result = Object.values(positions).filter((p) => p.quantity > 0);
+      console.log('Final positions:', result);
+      return result;
     } catch (error) {
       console.error('Error calculating portfolio positions:', error);
-      return [];
+      throw error;
     }
   }
 
-  // Test connection to the contract
   async testConnection() {
     try {
-      // Simple call to check if the contract exists and is accessible
       const accounts = await web3.eth.getAccounts();
+      if (!accounts || accounts.length === 0) {
+        throw new Error('No Ethereum accounts available');
+      }
       console.log('Connected account:', accounts[0]);
       console.log('Contract address:', this.contract.options.address);
+
+      // Test if contract is responding
+      const isConnected = await this.contract.methods.testConnection().call();
+      if (!isConnected) {
+        throw new Error('Contract test connection failed');
+      }
+
       return { success: true };
     } catch (error) {
       console.error('Connection test failed:', error);
-      return { success: false, error: error.message };
+      throw error;
     }
   }
 
   // Record a buy transaction
-  async recordBuyTransaction(exchangeAddress, symbol, price, quantity) {
+  async recordBuyTransaction(symbol, price, quantity) {
     try {
-      // For debugging, log all parameters
-      console.log('Buy transaction parameters:', {
-        exchangeAddress,
+      const accounts = await web3.eth.getAccounts();
+      // Convert price to string and handle decimal places
+      const priceString = typeof price === 'number' ? price.toString() : '0';
+      const priceInWei = this.web3.utils.toWei(priceString, 'ether');
+
+      console.log('Recording buy transaction:', {
         symbol,
         price,
+        priceString,
+        priceInWei,
         quantity,
       });
 
-      const accounts = await web3.eth.getAccounts();
-      if (!accounts || accounts.length === 0) {
-        return {
-          success: false,
-          error: 'No accounts available. Please connect MetaMask.',
-        };
-      }
-
-      // Convert values to appropriate formats
-      const numericPrice = parseFloat(price);
-      const numericQuantity = parseInt(quantity, 10);
-
-      if (isNaN(numericPrice)) {
-        return { success: false, error: `Invalid price: ${price}` };
-      }
-
-      if (isNaN(numericQuantity) || numericQuantity <= 0) {
-        return { success: false, error: `Invalid quantity: ${quantity}` };
-      }
-
-      // Convert price to wei
-      const priceInWei = web3.utils.toWei(numericPrice.toString(), 'ether');
-
-      console.log('Formatted parameters:', {
-        symbol,
-        priceInWei,
-        numericQuantity,
-        from: accounts[0],
-      });
-
-      // For now, let's mock the transaction to bypass blockchain issues
-      // console.log('Mocking successful transaction for development');
-      // return { success: true };
-
-      // Uncomment this when ready to test actual blockchain interaction
-      const gasEstimate = await exchange.methods
-        .recordBuyTransaction(symbol, priceInWei, numericQuantity)
-        .estimateGas({ from: accounts[0] });
-
-      console.log('Gas estimate:', gasEstimate);
-
-      const result = await exchange.methods
-        .recordBuyTransaction(symbol, priceInWei, numericQuantity)
+      const result = await this.contract.methods
+        .recordBuyTransaction(symbol, priceInWei, quantity)
         .send({
           from: accounts[0],
-          // gas: Math.floor(gasEstimate * 1.5), // Add 50% buffer
-          gasPrice: web3.utils.toWei('20', 'gwei'),
+          gas: '3000000',
         });
 
-      console.log('Transaction result:', result);
-      return { success: true, transactionHash: result.transactionHash };
+      return { success: true, transaction: result };
     } catch (error) {
       console.error('Error recording buy transaction:', error);
-
-      // Provide more detailed error information
-      let errorMessage = error.message;
-
-      // Check for specific error types
-      if (error.message.includes('User denied transaction signature')) {
-        errorMessage = 'Transaction was rejected in MetaMask.';
-      } else if (error.message.includes('Internal JSON-RPC error')) {
-        errorMessage =
-          'Transaction failed on the blockchain. This could be due to contract restrictions or insufficient gas.';
-      }
-
-      return { success: false, error: errorMessage };
+      return { success: false, error: error.message };
     }
   }
 
   // Record a sell transaction
-  async recordSellTransaction(exchangeAddress, symbol, price, quantity) {
+  async recordSellTransaction(symbol, price, quantity) {
     try {
-      // For debugging, log all parameters
-      console.log('Sell transaction parameters:', {
-        exchangeAddress,
+      const accounts = await web3.eth.getAccounts();
+      // Convert price to string and handle decimal places
+      const priceString = typeof price === 'number' ? price.toString() : '0';
+      const priceInWei = this.web3.utils.toWei(priceString, 'ether');
+
+      console.log('Recording sell transaction:', {
         symbol,
         price,
+        priceString,
+        priceInWei,
         quantity,
       });
 
-      const accounts = await web3.eth.getAccounts();
-      if (!accounts || accounts.length === 0) {
-        return {
-          success: false,
-          error: 'No accounts available. Please connect MetaMask.',
-        };
-      }
-
-      // Convert values to appropriate formats
-      const numericPrice = parseFloat(price);
-      const numericQuantity = parseInt(quantity, 10);
-
-      if (isNaN(numericPrice)) {
-        return { success: false, error: `Invalid price: ${price}` };
-      }
-
-      if (isNaN(numericQuantity) || numericQuantity <= 0) {
-        return { success: false, error: `Invalid quantity: ${quantity}` };
-      }
-
-      // Convert price to wei
-      const priceInWei = web3.utils.toWei(numericPrice.toString(), 'ether');
-
-      console.log('Formatted parameters:', {
-        symbol,
-        priceInWei,
-        numericQuantity,
-        from: accounts[0],
-      });
-
-      // For now, let's mock the transaction to bypass blockchain issues
-      console.log('Mocking successful transaction for development');
-      return { success: true };
-
-      /*
-      // Uncomment this when ready to test actual blockchain interaction
-      const gasEstimate = await exchange.methods
-        .recordSellTransaction(symbol, priceInWei, numericQuantity)
-        .estimateGas({ from: accounts[0] });
-      
-      console.log('Gas estimate:', gasEstimate);
-      
-      const result = await exchange.methods
-        .recordSellTransaction(symbol, priceInWei, numericQuantity)
+      const result = await this.contract.methods
+        .recordSellTransaction(symbol, priceInWei, quantity)
         .send({
           from: accounts[0],
-          gas: Math.floor(gasEstimate * 1.5), // Add 50% buffer
-          gasPrice: web3.utils.toWei('20', 'gwei')
+          gas: '3000000',
         });
-      
-      console.log('Transaction result:', result);
-      return { success: true, transactionHash: result.transactionHash };
-      */
+
+      return { success: true, transaction: result };
     } catch (error) {
       console.error('Error recording sell transaction:', error);
-
-      // Provide more detailed error information
-      let errorMessage = error.message;
-
-      // Check for specific error types
-      if (error.message.includes('User denied transaction signature')) {
-        errorMessage = 'Transaction was rejected in MetaMask.';
-      } else if (error.message.includes('Internal JSON-RPC error')) {
-        errorMessage =
-          'Transaction failed on the blockchain. This could be due to contract restrictions or insufficient gas.';
-      }
-
-      return { success: false, error: errorMessage };
+      return { success: false, error: error.message };
     }
   }
 }

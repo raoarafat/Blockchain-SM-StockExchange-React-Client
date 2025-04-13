@@ -6,8 +6,8 @@ const compiledStockExchange = require('./build/StockExchange.json');
 
 // Create provider with your mnemonic and Infura endpoint
 const provider = new HDWalletProvider(
-  '', // Your mnemonic
-  '' // Your Infura endpoint
+  'battle promote scan joy lift spike remove identify erupt pet junior birth', // Your mnemonic
+  'https://sepolia.infura.io/v3/09e89fac4db649a397524b4d6f80434a' // Your Infura endpoint
 );
 
 const web3 = new Web3(provider);

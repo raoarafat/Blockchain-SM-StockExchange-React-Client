@@ -9,6 +9,6 @@ const abi =
 
 const instance = new web3.eth.Contract(
   abi,
-  'Your Contract Address' //
+  '0xc9fDd40f73F4f74ff95756F08F50f81c55764084'
 );
 export default instance;

@@ -1,6 +1,14 @@
 // pages/index.js or pages/index.tsx (or whichever file you are using for the page)
-import React, { useState } from 'react';
-import { Container, Icon, Menu, Dropdown, Message } from 'semantic-ui-react';
+import React, { useState, useEffect } from 'react';
+import {
+  Container,
+  Icon,
+  Menu,
+  Dropdown,
+  Message,
+  Button,
+  Segment,
+} from 'semantic-ui-react';
 import Layout from '../components/Layout';
 import 'semantic-ui-css/semantic.min.css';
 import companiesData from '../data/companies.json';
@@ -13,6 +21,7 @@ import ProtectedRoute from '../components/ProtectedRoute';
 import { useAuth } from '../context/AuthContext';
 import Header from '../components/Header';
 import { pageStyles } from '../styles/global';
+import { blockchainService } from '../services/blockchainService';
 
 const CampaignIndex = () => {
   const [state, setState] = useState({
@@ -25,6 +34,7 @@ const CampaignIndex = () => {
   const { user, logout } = useAuth();
   // Use your deployed StockExchange contract address here
   const exchangeAddress = '0xDc5B1E3393316E6C83C0d4676b7E66951E35ADD7';
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const handleViewModalOpen = (company) => {
@@ -47,11 +57,47 @@ const CampaignIndex = () => {
     setState({ ...state, sellModalOpen: true, selectedCompany: company });
   };
 
-  const handleSellModalClose = () => {
+  const handleSellModalClose = async (wasSuccessful) => {
     setState({ ...state, sellModalOpen: false });
+    if (wasSuccessful) {
+      // Refresh the data
+      await loadBlockchainData();
+    }
   };
 
   const { viewModalOpen, buyModalOpen, sellModalOpen, selectedCompany } = state;
+
+  const loadBlockchainData = async () => {
+    if (user?.address) {
+      try {
+        setIsLoading(true);
+        setError(null); // Clear any previous errors
+
+        // Test connection first
+        await blockchainService.testConnection();
+
+        // Get portfolio positions
+        const positions = await blockchainService.getPortfolioPositions(
+          user.address
+        );
+        console.log('Loaded positions:', positions); // Debug log
+      } catch (error) {
+        console.error('Error loading blockchain data:', error);
+        setError(
+          error.message ||
+            'Failed to load portfolio data. Please make sure MetaMask is connected and you are on the correct network.'
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (user?.address) {
+      loadBlockchainData();
+    }
+  }, [user]);
 
   return (
     <ProtectedRoute>
@@ -63,11 +109,21 @@ const CampaignIndex = () => {
           Stock Market
         </h2>
 
-        {error ? (
+        {error && (
           <Message negative>
-            <Message.Header>Error</Message.Header>
+            <Message.Header>Error Loading Data</Message.Header>
             <p>{error}</p>
+            <Button onClick={loadBlockchainData} primary>
+              <Icon name="refresh" />
+              Retry
+            </Button>
           </Message>
+        )}
+
+        {isLoading ? (
+          <Segment loading>
+            <p>Loading portfolio data...</p>
+          </Segment>
         ) : (
           <>
             <CompaniesTable
